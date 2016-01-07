@@ -16,5 +16,9 @@
     "client/bower_components",
     "test",
     "tests"
-  ]
+  ],
+  "dependencies": {
+    "three.js": "threejs#*",
+    "webvr-polyfill": "~0.2.3"
+  }
 }
