@@ -1,0 +1,20 @@
+{
+  "name": "HouseViewerJS",
+  "authors": [
+    "Jesse Vander Does <jesse@htmlfusion.com>"
+  ],
+  "description": "Three.js OpenHouseVR viewer",
+  "main": "main.js",
+  "moduleType": [],
+  "license": "Commercial",
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "client/bower_components",
+    "test",
+    "tests"
+  ]
+}
