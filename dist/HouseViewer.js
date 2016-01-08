@@ -169,7 +169,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          var material = new _threeJs.MeshBasicMaterial({ color: 0xffff00 });
 	          var door = new _threeJs.Mesh(geometry, material);
 
-	          door.position.setX(passage.position[0]);
+	          door.position.setX(-passage.position[0]);
 	          door.position.setY(passage.position[1]);
 	          door.position.setZ(passage.position[2]);
 	          doors.add(door);

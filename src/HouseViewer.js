@@ -92,7 +92,7 @@ export default class {
         var material = new MeshBasicMaterial( {color: 0xffff00} );
         var door = new Mesh( geometry, material );
 
-        door.position.setX( passage.position[0] );
+        door.position.setX( - passage.position[0] );
         door.position.setY( passage.position[1] );
         door.position.setZ( passage.position[2] );
         doors.add( door );
