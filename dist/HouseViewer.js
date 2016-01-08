@@ -82,20 +82,20 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _WebVRManager2 = _interopRequireDefault(_WebVRManager);
 
-	var _imageUtils = __webpack_require__(21);
-
-	var _imageUtils2 = _interopRequireDefault(_imageUtils);
-
 	var _default = (function () {
 	  function _default() {
 	    _classCallCheck(this, _default);
+
+	    this.rooms = {};
 	  }
 
 	  _createClass(_default, [{
 	    key: 'init',
 	    value: function init(element) {
+
 	      var self = this;
 	      var renderer = new _threeJs.WebGLRenderer({ antialias: true });
+
 	      renderer.setPixelRatio(window.devicePixelRatio);
 	      // Append the canvas element created by the renderer to document body element.
 	      element.appendChild(renderer.domElement);
@@ -123,6 +123,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	      };
 	      var manager = new _WebVRManager2['default'](renderer, effect, params);
 
+	      this.geometry = new _threeJs.SphereGeometry(500, 60, 40);
+	      this.geometry.scale(-1, 1, 1);
+
+	      this.material = new _threeJs.MeshBasicMaterial({});
+
+	      mesh = new _threeJs.Mesh(this.geometry, this.material);
+
+	      this.loadPano('https://s3-us-west-1.amazonaws.com/htmlfusion-open-house/houses/1002/R1.JPG');
+	      this.scene.add(mesh);
+
 	      function animate(timestamp) {
 	        // Update VR headset position and apply to camera.
 	        controls.update();
@@ -136,17 +146,59 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: 'sample',
-	    value: function sample() {
-	      var geometry = new _threeJs.SphereGeometry(500, 60, 40);
-	      geometry.scale(-1, 1, 1);
-
-	      var material = new _threeJs.MeshBasicMaterial({
-	        map: _imageUtils2['default'].loadTexture('/example/imgs/office.jpg')
+	    value: function sample() {}
+	  }, {
+	    key: 'setHouse',
+	    value: function setHouse(house) {
+	      var self = this;
+	      this.rooms = {};
+	      this.house = house;
+	      this.house.data.house.rooms.forEach(function (room) {
+	        self.rooms[room.id] = room;
 	      });
+	    }
+	  }, {
+	    key: 'loadRoom',
+	    value: function loadRoom(roomId, successCb, failureCb, progressCb) {
+	      var room = this.rooms[roomId];
+	      this.loadPano(room.image, successCb, failureCb, progressCb);
+	    }
+	  }, {
+	    key: 'loadPano',
+	    value: function loadPano(url, successCb, failureCb, progressCb) {
+	      // instantiate a loader
+	      var self = this;
+	      var loader = new _threeJs.TextureLoader();
+	      loader.setCrossOrigin("anonymous");
 
-	      mesh = new _threeJs.Mesh(geometry, material);
-
-	      this.scene.add(mesh);
+	      // load a resource
+	      loader.load(
+	      // resource URL
+	      url,
+	      // Function when resource is loaded
+	      function (texture) {
+	        // do something with the texture
+	        self.material.map = texture;
+	        self.material.needsUpdate = true;
+	        if (successCb) {
+	          successCb(texture);
+	        }
+	      },
+	      // Function called when download progresses
+	      function (xhr) {
+	        var progress = xhr.loaded / xhr.total * 100;
+	        console.log(progress + '% loaded');
+	        if (progressCb) {
+	          progressCb(progress);
+	        }
+	      },
+	      // Function called when download errors
+	      function (xhr) {
+	        console.log('An error happened');
+	        if (failureCb) {
+	          failureCb();
+	        }
+	      });
 	    }
 	  }]);
 
@@ -42326,66 +42378,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	},{"./base.js":1,"./cardboard-hmd-vr-device.js":2,"./fusion-position-sensor-vr-device.js":4,"./mouse-keyboard-position-sensor-vr-device.js":6}]},{},[5]);
 
-
-/***/ },
-/* 21 */
-/***/ function(module, exports, __webpack_require__) {
-
-	Object.defineProperty(exports, '__esModule', {
-	  value: true
-	});
-	/**
-	 * @author alteredq / http://alteredqualia.com/
-	 * @author mrdoob / http://mrdoob.com/
-	 * @author Daosheng Mu / https://github.com/DaoshengMu/
-	 */
-
-	var THREE = __webpack_require__(1);
-
-	exports['default'] = ImageUtils = {
-
-	  crossOrigin: undefined,
-
-	  loadTexture: function loadTexture(url, mapping, onLoad, onError) {
-
-	    console.warn('THREE.ImageUtils.loadTexture is being deprecated. Use THREE.TextureLoader() instead.');
-
-	    var loader = new THREE.TextureLoader();
-	    loader.setCrossOrigin(this.crossOrigin);
-
-	    var texture = loader.load(url, onLoad, undefined, onError);
-
-	    if (mapping) texture.mapping = mapping;
-
-	    return texture;
-	  },
-
-	  loadTextureCube: function loadTextureCube(urls, mapping, onLoad, onError) {
-
-	    console.warn('THREE.ImageUtils.loadTextureCube is being deprecated. Use THREE.CubeTextureLoader() instead.');
-
-	    var loader = new THREE.CubeTextureLoader();
-	    loader.setCrossOrigin(this.crossOrigin);
-
-	    var texture = loader.load(urls, onLoad, undefined, onError);
-
-	    if (mapping) texture.mapping = mapping;
-
-	    return texture;
-	  },
-
-	  loadCompressedTexture: function loadCompressedTexture() {
-
-	    console.error('THREE.ImageUtils.loadCompressedTexture has been removed. Use THREE.DDSLoader instead.');
-	  },
-
-	  loadCompressedTextureCube: function loadCompressedTextureCube() {
-
-	    console.error('THREE.ImageUtils.loadCompressedTextureCube has been removed. Use THREE.DDSLoader instead.');
-	  }
-
-	};
-	module.exports = exports['default'];
 
 /***/ }
 /******/ ])
