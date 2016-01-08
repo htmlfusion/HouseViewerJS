@@ -22,7 +22,8 @@ var RotateInstructions = require('./rotate-instructions.js');
 var Util = require('./util.js');
 var ViewerSelector = require('./viewer-selector.js');
 var Wakelock = require('./wakelock.js');
-import HMDVRDevice from 'webvr-polyfill';
+var Promise = require('promise-polyfill');
+require('webvr-polyfill');
 
 
 /**
