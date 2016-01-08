@@ -1,7 +1,9 @@
 import { Scene, WebGLRenderer, PerspectiveCamera, SphereGeometry, MeshBasicMaterial, Mesh } from 'three.js';
+import * as THREE from 'three.js';
 import VRControls from './VRControls';
 import VREffect from './VREffect';
 import WebVRManager from './WebVRManager';
+import ImageUtils from './image-utils';
 
 export default class {
   init(element) {
@@ -44,8 +46,6 @@ export default class {
 
     // Kick off animation loop
     animate();
-
-    return 'hello';
   }
 
   sample() {
