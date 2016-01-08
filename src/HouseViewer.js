@@ -48,16 +48,16 @@ export default class {
     };
     this.manager = new WebVRManager(renderer, effect, params);
 
-    this.roomSphere = new SphereGeometry( 1000, 60, 40 );
-    this.roomSphere.scale( - 1, 1, 1 );
+    var geometry= new SphereGeometry( 1000, 60, 40 );
+    geometry.scale( - 1, 1, 1 );
 
     this.material = new MeshBasicMaterial( {} );
 
-    mesh = new Mesh( this.roomSphere, this.material );
+    this.roomSphere = new Mesh( geometry, this.material );
 
     var light = new AmbientLight( 0x404040 ); // soft white light
 
-    this.scene.add( mesh );
+    this.scene.add( this.roomSphere );
     this.scene.add( light );
 
 
@@ -166,8 +166,9 @@ export default class {
         doors.add( door );
       });
 
-      doors.rotateY(Math.degToRad(room.heading));
-      self.roomSphere.rotateY(Math.degToRad(room.heading));
+      var heading = Math.degToRad(360) - Math.degToRad(room.heading);
+      doors.rotation.y = heading;
+      self.roomSphere.rotation.y = heading;
       self.scene.add( doors );
       self.currentDoors = doors;
 
@@ -175,7 +176,28 @@ export default class {
         successCb();
       }
     };
-    this.loadPano(room.image, onRoomLoad, failureCb, progressCb);
+
+    self.loadPanoProgressive(room.image, onRoomLoad, onRoomLoad);
+  }
+
+  loadPanoProgressive(url, successCb, failureCb, progressCb) {
+    var self = this;
+    setTimeout(function () {
+      self.loadPano(url.replace('.JPG', '_low.JPG'), function(){
+
+        // If we successfully load the low res version, call success immediately
+        successCb();
+        setTimeout(function(){
+          self.loadPano(url);
+        }, 100);
+
+        // If we fail to load the low res version, pass the success callback to  the high res loader
+      }, function(){
+        setTimeout(function(){
+          self.loadPano(url, successCb, failureCb);
+        }, 100);
+      }, 1);
+    }, progressCb);
   }
 
   loadPano(url, successCb, failureCb, progressCb) {

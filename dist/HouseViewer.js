@@ -123,16 +123,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	      };
 	      this.manager = new _WebVRManager2['default'](renderer, effect, params);
 
-	      this.roomSphere = new _threeJs.SphereGeometry(1000, 60, 40);
-	      this.roomSphere.scale(-1, 1, 1);
+	      var geometry = new _threeJs.SphereGeometry(1000, 60, 40);
+	      geometry.scale(-1, 1, 1);
 
 	      this.material = new _threeJs.MeshBasicMaterial({});
 
-	      mesh = new _threeJs.Mesh(this.roomSphere, this.material);
+	      this.roomSphere = new _threeJs.Mesh(geometry, this.material);
 
 	      var light = new _threeJs.AmbientLight(0x404040); // soft white light
 
-	      this.scene.add(mesh);
+	      this.scene.add(this.roomSphere);
 	      this.scene.add(light);
 
 	      this.raycaster = new _threeJs.Raycaster();
@@ -242,8 +242,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	          doors.add(door);
 	        });
 
-	        doors.rotateY(_threeJs.Math.degToRad(room.heading));
-	        self.roomSphere.rotateY(_threeJs.Math.degToRad(room.heading));
+	        var heading = _threeJs.Math.degToRad(360) - _threeJs.Math.degToRad(room.heading);
+	        doors.rotation.y = heading;
+	        self.roomSphere.rotation.y = heading;
 	        self.scene.add(doors);
 	        self.currentDoors = doors;
 
@@ -251,7 +252,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	          successCb();
 	        }
 	      };
-	      this.loadPano(room.image, onRoomLoad, failureCb, progressCb);
+
+	      self.loadPanoProgressive(room.image, onRoomLoad, onRoomLoad);
+	    }
+	  }, {
+	    key: 'loadPanoProgressive',
+	    value: function loadPanoProgressive(url, successCb, failureCb, progressCb) {
+	      var self = this;
+	      setTimeout(function () {
+	        self.loadPano(url.replace('.JPG', '_low.JPG'), function () {
+
+	          // If we successfully load the low res version, call success immediately
+	          successCb();
+	          setTimeout(function () {
+	            self.loadPano(url);
+	          }, 100);
+
+	          // If we fail to load the low res version, pass the success callback to  the high res loader
+	        }, function () {
+	          setTimeout(function () {
+	            self.loadPano(url, successCb, failureCb);
+	          }, 100);
+	        }, 1);
+	      }, progressCb);
 	    }
 	  }, {
 	    key: 'loadPano',
