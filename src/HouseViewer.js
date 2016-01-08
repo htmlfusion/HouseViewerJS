@@ -10,11 +10,13 @@ export default class {
 
   constructor() {
     this.rooms = {};
+    this.activeDoor = null;
   }
 
   init(element) {
-
     var self = this;
+
+    element.addEventListener('click', this.onClick.bind(this));
     var renderer = new WebGLRenderer({antialias: true});
 
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -46,7 +48,7 @@ export default class {
     };
     this.manager = new WebVRManager(renderer, effect, params);
 
-    this.roomSphere = new SphereGeometry( 500, 60, 40 );
+    this.roomSphere = new SphereGeometry( 1000, 60, 40 );
     this.roomSphere.scale( - 1, 1, 1 );
 
     this.material = new MeshBasicMaterial( {} );
@@ -83,7 +85,11 @@ export default class {
   }
 
   updateRaycaster() {
+    var self = this;
     if (this.currentDoors) {
+
+      this.activeDoor = null;
+
       this.raycaster.setFromCamera( this.screenCenter, this.camera );
 
       // See if the ray from the camera into the world hits one of our meshes
@@ -103,6 +109,8 @@ export default class {
           } else {
             door = collision.object;
           }
+
+          self.activeDoor = door;
 
           door.material.opacity = 1;
           door.needsUpdate = true;
@@ -124,6 +132,10 @@ export default class {
     var self = this;
     var room = this.rooms[roomId];
 
+    if (self.currentDoors) {
+      this.scene.remove(self.currentDoors);
+    }
+
     var onRoomLoad = function(){
       var doors = new Object3D();
 
@@ -140,9 +152,9 @@ export default class {
         door.position.setY( passage.position[1] );
         door.position.setZ( passage.position[2] );
         door.name = "door";
+        door.passage = passage;
 
-
-        var geometry = new CylinderGeometry( 8, 8, 40, 10 );
+        var geometry = new CylinderGeometry( 4, 4, 40, 10 );
         var material = new MeshBasicMaterial( { color: 0x00ff00 } );
         var proxy = new Mesh( geometry, material );
         proxy.material.transparent = true;
@@ -200,6 +212,12 @@ export default class {
           failureCb();
         }
       });
+  }
+
+  onClick(event) {
+    if (this.activeDoor) {
+      this.loadRoom(this.activeDoor.passage.roomId);
+    }
   }
 
 };

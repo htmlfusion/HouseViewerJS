@@ -83,13 +83,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _classCallCheck(this, _default);
 
 	    this.rooms = {};
+	    this.activeDoor = null;
 	  }
 
 	  _createClass(_default, [{
 	    key: 'init',
 	    value: function init(element) {
-
 	      var self = this;
+
+	      element.addEventListener('click', this.onClick.bind(this));
 	      var renderer = new _threeJs.WebGLRenderer({ antialias: true });
 
 	      renderer.setPixelRatio(window.devicePixelRatio);
@@ -121,7 +123,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      };
 	      this.manager = new _WebVRManager2['default'](renderer, effect, params);
 
-	      this.roomSphere = new _threeJs.SphereGeometry(500, 60, 40);
+	      this.roomSphere = new _threeJs.SphereGeometry(1000, 60, 40);
 	      this.roomSphere.scale(-1, 1, 1);
 
 	      this.material = new _threeJs.MeshBasicMaterial({});
@@ -158,7 +160,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'updateRaycaster',
 	    value: function updateRaycaster() {
+	      var self = this;
 	      if (this.currentDoors) {
+
+	        this.activeDoor = null;
+
 	        this.raycaster.setFromCamera(this.screenCenter, this.camera);
 
 	        // See if the ray from the camera into the world hits one of our meshes
@@ -178,6 +184,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	            } else {
 	              door = collision.object;
 	            }
+
+	            self.activeDoor = door;
 
 	            door.material.opacity = 1;
 	            door.needsUpdate = true;
@@ -201,6 +209,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var self = this;
 	      var room = this.rooms[roomId];
 
+	      if (self.currentDoors) {
+	        this.scene.remove(self.currentDoors);
+	      }
+
 	      var onRoomLoad = function onRoomLoad() {
 	        var doors = new _threeJs.Object3D();
 
@@ -217,8 +229,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	          door.position.setY(passage.position[1]);
 	          door.position.setZ(passage.position[2]);
 	          door.name = "door";
+	          door.passage = passage;
 
-	          var geometry = new _threeJs.CylinderGeometry(8, 8, 40, 10);
+	          var geometry = new _threeJs.CylinderGeometry(4, 4, 40, 10);
 	          var material = new _threeJs.MeshBasicMaterial({ color: 0x00ff00 });
 	          var proxy = new _threeJs.Mesh(geometry, material);
 	          proxy.material.transparent = true;
@@ -276,6 +289,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	          failureCb();
 	        }
 	      });
+	    }
+	  }, {
+	    key: 'onClick',
+	    value: function onClick(event) {
+	      if (this.activeDoor) {
+	        this.loadRoom(this.activeDoor.passage.roomId);
+	      }
 	    }
 	  }]);
 
