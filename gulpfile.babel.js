@@ -120,7 +120,7 @@ const watchFiles = ['src/**/*', 'test/**/*', 'package.json', '**/.eslintrc', '.j
 
 // Run the headless unit tests as you make changes.
 function watch() {
-  gulp.watch(watchFiles, ['test']);
+  gulp.watch(watchFiles, ['build']);
 }
 
 function testBrowser() {
@@ -188,7 +188,7 @@ gulp.task('lint-gulpfile', lintGulpfile);
 gulp.task('lint', ['lint-src', 'lint-test', 'lint-gulpfile']);
 
 // Build two versions of the library
-gulp.task('build', ['lint', 'clean'], build);
+gulp.task('build', ['clean'], build);
 
 // Lint and run our tests
 gulp.task('test', ['lint'], test);

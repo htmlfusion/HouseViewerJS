@@ -70,8 +70,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	
 	  _createClass(_default, [{
-	    key: 'greet',
-	    value: function greet() {
+	    key: 'init',
+	    value: function init() {
+	      var scene = new _threeJs.Scene();
 	      return 'hello';
 	    }
 	  }]);

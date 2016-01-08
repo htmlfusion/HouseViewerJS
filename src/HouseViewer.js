@@ -1,7 +1,9 @@
 import { Scene } from 'three.js';
 
 export default class {
-  greet() {
+  init() {
+    var scene = new Scene();
+    console.log(scene);
     return 'hello';
   }
 };
