@@ -84,6 +84,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    this.rooms = {};
 	    this.activeDoor = null;
+	    this.textureCache = {};
 	  }
 
 	  _createClass(_default, [{
@@ -199,6 +200,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var self = this;
 	      this.rooms = {};
 	      this.house = house;
+	      delete this.textureCache;
+	      this.textureCache = {};
 	      this.house.data.house.rooms.forEach(function (room) {
 	        self.rooms[room.id] = room;
 	      });
@@ -284,6 +287,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var loader = new _threeJs.TextureLoader();
 	      loader.setCrossOrigin("anonymous");
 
+	      if (self.textureCache[url]) {
+	        self.material.map = self.textureCache[url];
+	        self.material.needsUpdate = true;
+	        if (successCb) {
+	          successCb();
+	        }
+	        return;
+	      }
+
 	      // load a resource
 	      loader.load(
 	      // resource URL
@@ -293,6 +305,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // do something with the texture
 	        self.material.map = texture;
 	        self.material.needsUpdate = true;
+	        self.textureCache[url] = texture;
 	        if (successCb) {
 	          successCb(texture);
 	        }
