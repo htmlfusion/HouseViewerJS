@@ -1,5 +1,7 @@
-import { Scene, WebGLRenderer, PerspectiveCamera, SphereGeometry, MeshBasicMaterial, Mesh, TextureLoader } from 'three.js';
-import * as THREE from 'three.js';
+import {
+  Scene, WebGLRenderer, PerspectiveCamera, SphereGeometry, MeshBasicMaterial, Mesh, TextureLoader, AmbientLight,
+  Object3D
+} from 'three.js';
 import VRControls from './VRControls';
 import VREffect from './VREffect';
 import WebVRManager from './WebVRManager';
@@ -9,8 +11,6 @@ export default class {
   constructor() {
     this.rooms = {};
   }
-
-
 
   init(element) {
 
@@ -51,8 +51,10 @@ export default class {
 
     mesh = new Mesh( this.geometry, this.material );
 
-    this.loadPano( 'https://s3-us-west-1.amazonaws.com/htmlfusion-open-house/houses/1002/R1.JPG' );
+    var light = new AmbientLight( 0x404040 ); // soft white light
+
     this.scene.add( mesh );
+    this.scene.add( light );
 
     function animate(timestamp) {
       // Update VR headset position and apply to camera.
@@ -71,7 +73,7 @@ export default class {
 
   setHouse(house) {
     var self = this;
-    this.rooms = {}
+    this.rooms = {};
     this.house = house;
     this.house.data.house.rooms.forEach(function(room){
       self.rooms[room.id] = room;
@@ -79,8 +81,30 @@ export default class {
   }
 
   loadRoom(roomId, successCb, failureCb, progressCb) {
+    var self = this;
     var room = this.rooms[roomId];
-    this.loadPano(room.image, successCb, failureCb, progressCb);
+
+    var onRoomLoad = function(){
+      var doors = new Object3D();
+
+      room.passages.forEach(function(passage){
+        var geometry = new SphereGeometry( 2, 32, 32 );
+        var material = new MeshBasicMaterial( {color: 0xffff00} );
+        var door = new Mesh( geometry, material );
+
+        door.position.setX( passage.position[0] );
+        door.position.setY( passage.position[1] );
+        door.position.setZ( passage.position[2] );
+        doors.add( door );
+      });
+
+      self.scene.add( doors );
+
+      if(successCb) {
+        successCb();
+      }
+    };
+    this.loadPano(room.image, onRoomLoad, failureCb, progressCb);
   }
 
   loadPano(url, successCb, failureCb, progressCb) {

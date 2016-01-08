@@ -62,13 +62,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
-
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 	var _threeJs = __webpack_require__(1);
-
-	var THREE = _interopRequireWildcard(_threeJs);
 
 	var _VRControls = __webpack_require__(2);
 
@@ -130,8 +126,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      mesh = new _threeJs.Mesh(this.geometry, this.material);
 
-	      this.loadPano('https://s3-us-west-1.amazonaws.com/htmlfusion-open-house/houses/1002/R1.JPG');
+	      var light = new _threeJs.AmbientLight(0x404040); // soft white light
+
 	      this.scene.add(mesh);
+	      this.scene.add(light);
 
 	      function animate(timestamp) {
 	        // Update VR headset position and apply to camera.
@@ -160,8 +158,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'loadRoom',
 	    value: function loadRoom(roomId, successCb, failureCb, progressCb) {
+	      var self = this;
 	      var room = this.rooms[roomId];
-	      this.loadPano(room.image, successCb, failureCb, progressCb);
+
+	      var onRoomLoad = function onRoomLoad() {
+	        var doors = new _threeJs.Object3D();
+
+	        room.passages.forEach(function (passage) {
+	          var geometry = new _threeJs.SphereGeometry(2, 32, 32);
+	          var material = new _threeJs.MeshBasicMaterial({ color: 0xffff00 });
+	          var door = new _threeJs.Mesh(geometry, material);
+
+	          door.position.setX(passage.position[0]);
+	          door.position.setY(passage.position[1]);
+	          door.position.setZ(passage.position[2]);
+	          doors.add(door);
+	        });
+
+	        self.scene.add(doors);
+
+	        if (successCb) {
+	          successCb();
+	        }
+	      };
+	      this.loadPano(room.image, onRoomLoad, failureCb, progressCb);
 	    }
 	  }, {
 	    key: 'loadPano',
