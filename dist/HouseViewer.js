@@ -119,12 +119,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	      };
 	      var manager = new _WebVRManager2['default'](renderer, effect, params);
 
-	      this.geometry = new _threeJs.SphereGeometry(500, 60, 40);
-	      this.geometry.scale(-1, 1, 1);
+	      this.roomSphere = new _threeJs.SphereGeometry(500, 60, 40);
+	      this.roomSphere.scale(-1, 1, 1);
 
 	      this.material = new _threeJs.MeshBasicMaterial({});
 
-	      mesh = new _threeJs.Mesh(this.geometry, this.material);
+	      mesh = new _threeJs.Mesh(this.roomSphere, this.material);
 
 	      var light = new _threeJs.AmbientLight(0x404040); // soft white light
 
@@ -175,6 +175,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	          doors.add(door);
 	        });
 
+	        doors.rotateY(_threeJs.Math.degToRad(room.heading));
+	        self.roomSphere.rotateY(_threeJs.Math.degToRad(room.heading));
 	        self.scene.add(doors);
 
 	        if (successCb) {

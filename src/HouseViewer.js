@@ -1,6 +1,6 @@
 import {
   Scene, WebGLRenderer, PerspectiveCamera, SphereGeometry, MeshBasicMaterial, Mesh, TextureLoader, AmbientLight,
-  Object3D
+  Object3D, Math
 } from 'three.js';
 import VRControls from './VRControls';
 import VREffect from './VREffect';
@@ -44,12 +44,12 @@ export default class {
     };
     var manager = new WebVRManager(renderer, effect, params);
 
-    this.geometry = new SphereGeometry( 500, 60, 40 );
-    this.geometry.scale( - 1, 1, 1 );
+    this.roomSphere = new SphereGeometry( 500, 60, 40 );
+    this.roomSphere.scale( - 1, 1, 1 );
 
     this.material = new MeshBasicMaterial( {} );
 
-    mesh = new Mesh( this.geometry, this.material );
+    mesh = new Mesh( this.roomSphere, this.material );
 
     var light = new AmbientLight( 0x404040 ); // soft white light
 
@@ -98,6 +98,8 @@ export default class {
         doors.add( door );
       });
 
+      doors.rotateY(Math.degToRad(room.heading));
+      self.roomSphere.rotateY(Math.degToRad(room.heading));
       self.scene.add( doors );
 
       if(successCb) {
