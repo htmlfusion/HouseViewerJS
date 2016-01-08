@@ -1,6 +1,6 @@
 import {
   Scene, WebGLRenderer, PerspectiveCamera, SphereGeometry, MeshBasicMaterial, Mesh, TextureLoader, AmbientLight,
-  Object3D, Math
+  Object3D, Math, Raycaster, Vector2
 } from 'three.js';
 import VRControls from './VRControls';
 import VREffect from './VREffect';
@@ -42,7 +42,7 @@ export default class {
       hideButton: false, // Default: false.
       isUndistorted: false // Default: false.
     };
-    var manager = new WebVRManager(renderer, effect, params);
+    this.manager = new WebVRManager(renderer, effect, params);
 
     this.roomSphere = new SphereGeometry( 500, 60, 40 );
     this.roomSphere.scale( - 1, 1, 1 );
@@ -60,7 +60,8 @@ export default class {
       // Update VR headset position and apply to camera.
       controls.update();
       // Render the scene through the manager.
-      manager.render(self.scene, camera, timestamp);
+      self.manager.render(self.scene, camera, timestamp);
+      self.updateRaycaster();
       requestAnimationFrame(animate);
     }
 
@@ -68,7 +69,15 @@ export default class {
     animate();
   }
 
+  getManager() {
+    return this.manager;
+  }
+
   sample() {
+  }
+
+  updateRaycaster() {
+
   }
 
   setHouse(house) {

@@ -117,7 +117,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        hideButton: false, // Default: false.
 	        isUndistorted: false // Default: false.
 	      };
-	      var manager = new _WebVRManager2['default'](renderer, effect, params);
+	      this.manager = new _WebVRManager2['default'](renderer, effect, params);
 
 	      this.roomSphere = new _threeJs.SphereGeometry(500, 60, 40);
 	      this.roomSphere.scale(-1, 1, 1);
@@ -135,7 +135,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // Update VR headset position and apply to camera.
 	        controls.update();
 	        // Render the scene through the manager.
-	        manager.render(self.scene, camera, timestamp);
+	        self.manager.render(self.scene, camera, timestamp);
+	        self.updateRaycaster();
 	        requestAnimationFrame(animate);
 	      }
 
@@ -143,8 +144,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	      animate();
 	    }
 	  }, {
+	    key: 'getManager',
+	    value: function getManager() {
+	      return this.manager;
+	    }
+	  }, {
 	    key: 'sample',
 	    value: function sample() {}
+	  }, {
+	    key: 'updateRaycaster',
+	    value: function updateRaycaster() {}
 	  }, {
 	    key: 'setHouse',
 	    value: function setHouse(house) {
