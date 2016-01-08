@@ -1,3 +1,3 @@
 console.log('something');
 var houseViewer = new HouseViewer();
-houseViewer.init();
+houseViewer.init(document.body);
