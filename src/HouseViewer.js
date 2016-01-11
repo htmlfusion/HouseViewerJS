@@ -53,9 +53,9 @@ export default class {
     var geometry= new SphereGeometry( 2000, 60, 40 );
     geometry.scale( - 1, 1, 1 );
 
-    this.material = new MeshBasicMaterial( {} );
+    material = new MeshBasicMaterial( {} );
 
-    this.roomSphere = new Mesh( geometry, this.material );
+    this.roomSphere = new Mesh( geometry, material );
 
     var light = new AmbientLight( 0x404040 ); // soft white light
 
@@ -192,15 +192,15 @@ export default class {
 
       // If we successfully load the low res version, call success immediately
       successCb();
-      self.loadTimeOut =  setTimeout(function(){
+      self.loadTimeOut = setTimeout(function() {
         self.loadPano(url);
-      }, 100);
+      }, 1000);
 
       // If we fail to load the low res version, pass the success callback to  the high res loader
     }, function(){
-      self.loadTimeOut = setTimeout(function(){
+      self.loadTimeOut = setTimeout(function() {
         self.loadPano(url, successCb, failureCb);
-      }, 100);
+      }, 1000);
     }, progressCb);
   }
 
@@ -211,8 +211,7 @@ export default class {
     loader.setCrossOrigin("anonymous");
 
     if (self.textureCache[url]) {
-      self.material.map = self.textureCache[url];
-      self.material.needsUpdate = true;
+      self.roomSphere.material = self.textureCache[url];
       if (successCb) {
         successCb();
       }
@@ -226,9 +225,9 @@ export default class {
       // Function when resource is loaded
       function ( texture ) {
         // do something with the texture
-        self.material.map = texture;
-        self.material.needsUpdate = true;
-        self.textureCache[url] = texture;
+        var material = new MeshBasicMaterial( {map: texture} );
+        self.roomSphere.material = material;
+        self.textureCache[url] = material;
         if (successCb) {
           successCb(texture);
         }
