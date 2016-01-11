@@ -85,6 +85,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.rooms = {};
 	    this.activeDoor = null;
 	    this.textureCache = {};
+	    this.loadTimeOut = null;
 	  }
 
 	  _createClass(_default, [{
@@ -124,7 +125,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      };
 	      this.manager = new _WebVRManager2['default'](renderer, effect, params);
 
-	      var geometry = new _threeJs.SphereGeometry(1000, 60, 40);
+	      var geometry = new _threeJs.SphereGeometry(2000, 60, 40);
 	      geometry.scale(-1, 1, 1);
 
 	      this.material = new _threeJs.MeshBasicMaterial({});
@@ -134,6 +135,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var light = new _threeJs.AmbientLight(0x404040); // soft white light
 
 	      this.scene.add(this.roomSphere);
+
 	      this.scene.add(light);
 
 	      this.raycaster = new _threeJs.Raycaster();
@@ -262,21 +264,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'loadPanoProgressive',
 	    value: function loadPanoProgressive(url, successCb, failureCb, progressCb) {
 	      var self = this;
-	      setTimeout(function () {
-	        self.loadPano(url.replace('.JPG', '_low.JPG'), function () {
 
-	          // If we successfully load the low res version, call success immediately
-	          successCb();
-	          setTimeout(function () {
-	            self.loadPano(url);
-	          }, 100);
+	      clearTimeout(self.loadTimeOut);
 
-	          // If we fail to load the low res version, pass the success callback to  the high res loader
-	        }, function () {
-	          setTimeout(function () {
-	            self.loadPano(url, successCb, failureCb);
-	          }, 100);
-	        }, 1);
+	      self.loadPano(url.replace('.JPG', '_low.JPG'), function () {
+
+	        // If we successfully load the low res version, call success immediately
+	        successCb();
+	        self.loadTimeOut = setTimeout(function () {
+	          self.loadPano(url);
+	        }, 100);
+
+	        // If we fail to load the low res version, pass the success callback to  the high res loader
+	      }, function () {
+	        self.loadTimeOut = setTimeout(function () {
+	          self.loadPano(url, successCb, failureCb);
+	        }, 100);
 	      }, progressCb);
 	    }
 	  }, {
