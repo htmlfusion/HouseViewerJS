@@ -1,6 +1,6 @@
 import {
   Scene, WebGLRenderer, PerspectiveCamera, SphereGeometry, MeshBasicMaterial, Mesh, TextureLoader, AmbientLight,
-  Object3D, Math, Raycaster, Vector2, CylinderGeometry
+  Object3D, Math, Raycaster, Vector2, CylinderGeometry, GridTexture
 } from 'three.js';
 import VRControls from './VRControls';
 import VREffect from './VREffect';
@@ -8,7 +8,9 @@ import WebVRManager from './WebVRManager';
 
 export default class {
 
+
   constructor() {
+    this.rootUrl = 'http://htmlfusion-open-house.s3-website-us-west-1.amazonaws.com/houses/';
     this.rooms = {};
     this.activeDoor = null;
     this.textureCache = {};
@@ -180,7 +182,7 @@ export default class {
       }
     };
 
-    self.loadPanoProgressive(room.image, onRoomLoad, onRoomLoad);
+    self.loadPanoTiles(room.image, onRoomLoad, onRoomLoad);
   }
 
   loadPanoProgressive(url, successCb, failureCb, progressCb) {
@@ -193,15 +195,62 @@ export default class {
       // If we successfully load the low res version, call success immediately
       successCb();
       self.loadTimeOut = setTimeout(function() {
-        self.loadPano(url);
+        self.loadPanoTiles(url);
       }, 1000);
 
       // If we fail to load the low res version, pass the success callback to  the high res loader
     }, function(){
       self.loadTimeOut = setTimeout(function() {
-        self.loadPano(url, successCb, failureCb);
+        self.loadPanoTiles(url, successCb, failureCb);
       }, 1000);
     }, progressCb);
+  }
+
+  pad(n, width, z) {
+    z = z || '0';
+    n = n + '';
+    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+  }
+
+
+  loadPanoTiles(url, failureCb, progressCB) {
+    var self = this;
+
+
+    var units = [];
+    for (var r = 1; r <= 16; r++) {
+      for (var c = 1; c <= 16; c++) {
+        units.push([this.pad(r, 2), this.pad(c, 2)].join('_'));
+      }
+    }
+    units.reverse();
+
+    var texture = new GridTexture( 256, 128, 16, 16 );
+    var material = new MeshBasicMaterial( {map: texture} );
+    self.roomSphere.material = material;
+
+    units.forEach(function(unit) {
+
+      var tile = url.replace('.JPG', '_' + unit + '.png');
+
+      var result = texture.getLocator( unit );
+
+      var locator = result[ 0 ];
+
+      var created = result[ 1 ];
+
+      var loader = new TextureLoader();
+      loader.setCrossOrigin("anonymous");
+
+      if ( created ) {
+        setTimeout(function(){
+          loader.load( tile, function ( unitTexture ) {
+            self.roomSphere.geometry.switchUvSystem( locator.uvSystem );
+            locator.setTexture( unitTexture );
+          } );
+        }, 1000);
+      }
+    });
   }
 
   loadPano(url, successCb, failureCb, progressCb) {

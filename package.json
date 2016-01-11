@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "promise-polyfill": "^2.1.4",
-    "three.js": "https://github.com/arcanis/three.js.git#texture-patch",
+    "three.js": "github:arcanis/three.js#texture-patch",
     "webvr-polyfill": "git+https://github.com/borismus/webvr-polyfill.git"
   }
 }

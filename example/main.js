@@ -10,7 +10,7 @@ xmlhttp.onreadystatechange = function() {
   if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
     var house = JSON.parse(xmlhttp.responseText);
     houseViewer.setHouse(house);
-    houseViewer.loadRoom(2);
+    houseViewer.loadRoom(1);
   }
 };
 xmlhttp.open("GET", houseUrl, true);
