@@ -1,6 +1,6 @@
 import {
   Scene, WebGLRenderer, PerspectiveCamera, SphereGeometry, MeshBasicMaterial, Mesh, TextureLoader, AmbientLight,
-  Object3D, Math, Raycaster, Vector2, CylinderGeometry, GridTexture
+  Object3D, Math, Raycaster, Vector2, CylinderGeometry, GridTexture, LineBasicMaterial
 } from 'three.js';
 import VRControls from './VRControls';
 import VREffect from './VREffect';
@@ -33,7 +33,7 @@ export default class {
     this.scene = new Scene();
 
     // Create a three.js camera.
-    this.camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+    this.camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 500, 5000);
 
     // Apply VR headset positional data to camera.
     var controls = new VRControls(this.camera);
@@ -52,17 +52,26 @@ export default class {
     };
     this.manager = new WebVRManager(renderer, effect, params);
 
-    var geometry= new SphereGeometry( 2000, 60, 40 );
+    var geometry = new SphereGeometry( 2000, 60, 40 );
     geometry.scale( - 1, 1, 1 );
 
     var texture = new GridTexture( 256, 128, 16, 16 );
-    material = new MeshBasicMaterial( {map: texture} );
+    material = new MeshBasicMaterial( {map: texture, transparent: true} );
 
     this.roomSphere = new Mesh( geometry, material );
 
-    var light = new AmbientLight( 0x404040 ); // soft white light
-
     this.scene.add( this.roomSphere );
+
+    var lowResTexture = new MeshBasicMaterial( {transparent: true} );
+
+    var geometry = new SphereGeometry( 2010, 60, 40 );
+    geometry.scale( - 1, 1, 1 );
+
+    this.roomSphereLow = new Mesh( geometry, lowResTexture );
+
+    this.scene.add( this.roomSphereLow );
+
+    var light = new AmbientLight( 0x404040 ); // soft white light
 
     this.scene.add( light );
 
@@ -222,33 +231,41 @@ export default class {
     loader.setCrossOrigin("anonymous");
 
     loader.load(url.replace('.JPG', '_low.JPG'), function(texture) {
-
-      var material = new MeshBasicMaterial( { map : texture, transparent: true } );
-
-      self.sphere.material = material;
-
-      setTimeout(function(){
-        for (var c = 0; c < 16; c++) {
-
-          for (var r = 0; r < 16; r++) {
-
-            var unit = [self.pad(r+1, 2), self.pad(c+1, 2)].join('_');
-
-            var tile = url.replace('.JPG', '_' + unit + '.png');
-
-            var patchTex = function ( tile, r, c) {
-              return function(unitTexture) {
-                console.log(tile);
-                self.roomSphere.material.map.patchTexture(unitTexture, c*256/4, 2048-r*128/4);
-              }
-            };
-
-            loader.load( tile, patchTex(tile, r, c) );
-          }
-        }
-      }, 2000);
+      var material = new MeshBasicMaterial( {map: texture} );
+      self.roomSphereLow.material = material;
     });
 
+    setTimeout(function(){
+
+      var offset = 0;
+      for (var c = 0; c < 16; c++) {
+
+        for (var r = 0; r < 16; r++) {
+
+          var makeTile = function(c, r) {
+
+            return function() {
+              var unit = [self.pad(r+1, 2), self.pad(c+1, 2)].join('_');
+
+              var tile = url.replace('.JPG', '_' + unit + '.png');
+
+              var patchTex = function ( tile, r, c) {
+                return function(unitTexture) {
+                  console.log(tile);
+                  self.roomSphere.material.map.patchTexture(unitTexture, c*256, (2048-r*128)-128);
+                }
+              };
+
+              loader.load( tile, patchTex(tile, r, c) );
+            };
+          };
+
+          setTimeout(makeTile(c, r), offset * 10);
+
+          offset += 1;
+        }
+      }
+    });
   }
 
   loadPano(url, successCb, failureCb, progressCb) {

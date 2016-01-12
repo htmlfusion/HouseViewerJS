@@ -107,7 +107,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.scene = new _threeJs.Scene();
 
 	      // Create a three.js camera.
-	      this.camera = new _threeJs.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+	      this.camera = new _threeJs.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 500, 5000);
 
 	      // Apply VR headset positional data to camera.
 	      var controls = new _VRControls2['default'](this.camera);
@@ -130,13 +130,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	      geometry.scale(-1, 1, 1);
 
 	      var texture = new _threeJs.GridTexture(256, 128, 16, 16);
-	      material = new _threeJs.MeshBasicMaterial({ map: texture });
+	      material = new _threeJs.MeshBasicMaterial({ map: texture, transparent: true });
 
 	      this.roomSphere = new _threeJs.Mesh(geometry, material);
 
-	      var light = new _threeJs.AmbientLight(0x404040); // soft white light
-
 	      this.scene.add(this.roomSphere);
+
+	      var lowResTexture = new _threeJs.MeshBasicMaterial({ transparent: true });
+
+	      var geometry = new _threeJs.SphereGeometry(2010, 60, 40);
+	      geometry.scale(-1, 1, 1);
+
+	      this.roomSphereLow = new _threeJs.Mesh(geometry, lowResTexture);
+
+	      this.scene.add(this.roomSphereLow);
+
+	      var light = new _threeJs.AmbientLight(0x404040); // soft white light
 
 	      this.scene.add(light);
 
@@ -301,28 +310,40 @@ return /******/ (function(modules) { // webpackBootstrap
 	      loader.setCrossOrigin("anonymous");
 
 	      loader.load(url.replace('.JPG', '_low.JPG'), function (texture) {
-	        var material = new _threeJs.MeshBasicMaterial({ map: texture, transparent: true });
-	        self.roomSphere.material = material;
-	        setTimeout(function () {
-	          for (var c = 0; c < 16; c++) {
+	        var material = new _threeJs.MeshBasicMaterial({ map: texture });
+	        self.roomSphereLow.material = material;
+	      });
 
-	            for (var r = 0; r < 16; r++) {
+	      setTimeout(function () {
 
-	              var unit = [self.pad(r + 1, 2), self.pad(c + 1, 2)].join('_');
+	        var offset = 0;
+	        for (var c = 0; c < 16; c++) {
 
-	              var tile = url.replace('.JPG', '_' + unit + '.png');
+	          for (var r = 0; r < 16; r++) {
 
-	              var patchTex = function patchTex(tile, r, c) {
-	                return function (unitTexture) {
-	                  console.log(tile);
-	                  self.roomSphere.material.map.patchTexture(unitTexture, c * 256 / 4, 2048 - r * 128 / 4);
+	            var makeTile = function makeTile(c, r) {
+
+	              return function () {
+	                var unit = [self.pad(r + 1, 2), self.pad(c + 1, 2)].join('_');
+
+	                var tile = url.replace('.JPG', '_' + unit + '.png');
+
+	                var patchTex = function patchTex(tile, r, c) {
+	                  return function (unitTexture) {
+	                    console.log(tile);
+	                    self.roomSphere.material.map.patchTexture(unitTexture, c * 256, 2048 - r * 128 - 128);
+	                  };
 	                };
-	              };
 
-	              loader.load(tile, patchTex(tile, r, c));
-	            }
+	                loader.load(tile, patchTex(tile, r, c));
+	              };
+	            };
+
+	            setTimeout(makeTile(c, r), offset * 10);
+
+	            offset += 1;
 	          }
-	        }, 2000);
+	        }
 	      });
 	    }
 	  }, {
