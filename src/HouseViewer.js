@@ -134,12 +134,22 @@ export default class {
   loadRoom(roomId, successCb, failureCb, progressCb) {
     var self = this;
     var room = this.rooms[roomId];
+    var heading = Math.degToRad(360) - Math.degToRad(room.heading);
 
     if (self.currentDoors) {
       this.scene.remove(self.currentDoors);
     }
 
+    // When low resolution is loaded, we'll setup the sphere to be oriented correctly
+    var basicInit = function () {
+      self.roomSphere.rotation.y = heading;
+    };
+
+    // Once the high resolution is loaded, we'll complete the room setup
     var onRoomLoad = function(){
+
+      basicInit()
+
       var doors = new Object3D();
 
       room.passages.forEach(function(passage){
@@ -164,14 +174,12 @@ export default class {
         proxy.material.opacity = 0;
         proxy.name = "doorProxy";
 
-
         door.add(proxy);
         doors.add( door );
       });
 
-      var heading = Math.degToRad(360) - Math.degToRad(room.heading);
+
       doors.rotation.y = heading;
-      self.roomSphere.rotation.y = heading;
       self.scene.add( doors );
       self.currentDoors = doors;
 
@@ -180,26 +188,27 @@ export default class {
       }
     };
 
-    self.loadPanoProgressive(room.image, onRoomLoad, onRoomLoad);
+    self.loadPanoProgressive(room.image, basicInit, onRoomLoad, onRoomLoad);
   }
 
-  loadPanoProgressive(url, successCb, failureCb, progressCb) {
+  loadPanoProgressive(url, lowResSuccess, highResSuccess, failureCb, progressCb) {
     var self = this;
 
     clearTimeout(self.loadTimeOut);
 
     self.loadPano(url.replace('.JPG', '_low.JPG'), function(){
 
+      lowResSuccess();
+
       // If we successfully load the low res version, call success immediately
-      successCb();
       self.loadTimeOut = setTimeout(function() {
-        self.loadPano(url);
+        self.loadPano(url, highResSuccess, failureCb);
       }, 1000);
 
       // If we fail to load the low res version, pass the success callback to  the high res loader
     }, function(){
       self.loadTimeOut = setTimeout(function() {
-        self.loadPano(url, successCb, failureCb);
+        self.loadPano(url, highResSuccess, failureCb);
       }, 1000);
     }, progressCb);
   }
