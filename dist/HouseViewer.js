@@ -129,7 +129,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var geometry = new _threeJs.SphereGeometry(2000, 60, 40);
 	      geometry.scale(-1, 1, 1);
 
-	      material = new _threeJs.MeshBasicMaterial({});
+	      var texture = new _threeJs.GridTexture(256, 128, 16, 16);
+	      material = new _threeJs.MeshBasicMaterial({ map: texture });
 
 	      this.roomSphere = new _threeJs.Mesh(geometry, material);
 
@@ -295,39 +296,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function loadPanoTiles(url, failureCb, progressCB) {
 	      var self = this;
 
-	      var units = [];
-	      for (var r = 1; r <= 16; r++) {
-	        for (var c = 1; c <= 16; c++) {
-	          units.push([this.pad(r, 2), this.pad(c, 2)].join('_'));
-	        }
-	      }
-	      units.reverse();
+	      var loader = new _threeJs.TextureLoader();
 
-	      var texture = new _threeJs.GridTexture(256, 128, 16, 16);
-	      var material = new _threeJs.MeshBasicMaterial({ map: texture });
-	      self.roomSphere.material = material;
+	      loader.setCrossOrigin("anonymous");
 
-	      units.forEach(function (unit) {
+	      loader.load(url.replace('.JPG', '_low.JPG'), function (texture) {
+	        var material = new _threeJs.MeshBasicMaterial({ map: texture, transparent: true });
+	        self.roomSphere.material = material;
+	        setTimeout(function () {
+	          for (var c = 0; c < 16; c++) {
 
-	        var tile = url.replace('.JPG', '_' + unit + '.png');
+	            for (var r = 0; r < 16; r++) {
 
-	        var result = texture.getLocator(unit);
+	              var unit = [self.pad(r + 1, 2), self.pad(c + 1, 2)].join('_');
 
-	        var locator = result[0];
+	              var tile = url.replace('.JPG', '_' + unit + '.png');
 
-	        var created = result[1];
+	              var patchTex = function patchTex(tile, r, c) {
+	                return function (unitTexture) {
+	                  console.log(tile);
+	                  self.roomSphere.material.map.patchTexture(unitTexture, c * 256 / 4, 2048 - r * 128 / 4);
+	                };
+	              };
 
-	        var loader = new _threeJs.TextureLoader();
-	        loader.setCrossOrigin("anonymous");
-
-	        if (created) {
-	          setTimeout(function () {
-	            loader.load(tile, function (unitTexture) {
-	              self.roomSphere.geometry.switchUvSystem(locator.uvSystem);
-	              locator.setTexture(unitTexture);
-	            });
-	          }, 1000);
-	        }
+	              loader.load(tile, patchTex(tile, r, c));
+	            }
+	          }
+	        }, 2000);
 	      });
 	    }
 	  }, {

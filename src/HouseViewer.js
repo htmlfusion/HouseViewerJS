@@ -55,7 +55,8 @@ export default class {
     var geometry= new SphereGeometry( 2000, 60, 40 );
     geometry.scale( - 1, 1, 1 );
 
-    material = new MeshBasicMaterial( {} );
+    var texture = new GridTexture( 256, 128, 16, 16 );
+    material = new MeshBasicMaterial( {map: texture} );
 
     this.roomSphere = new Mesh( geometry, material );
 
@@ -216,41 +217,38 @@ export default class {
   loadPanoTiles(url, failureCb, progressCB) {
     var self = this;
 
+    var loader = new TextureLoader();
 
-    var units = [];
-    for (var r = 1; r <= 16; r++) {
-      for (var c = 1; c <= 16; c++) {
-        units.push([this.pad(r, 2), this.pad(c, 2)].join('_'));
-      }
-    }
-    units.reverse();
+    loader.setCrossOrigin("anonymous");
 
-    var texture = new GridTexture( 256, 128, 16, 16 );
-    var material = new MeshBasicMaterial( {map: texture} );
-    self.roomSphere.material = material;
+    loader.load(url.replace('.JPG', '_low.JPG'), function(texture) {
 
-    units.forEach(function(unit) {
+      var material = new MeshBasicMaterial( { map : texture, transparent: true } );
 
-      var tile = url.replace('.JPG', '_' + unit + '.png');
+      self.sphere.material = material;
 
-      var result = texture.getLocator( unit );
+      setTimeout(function(){
+        for (var c = 0; c < 16; c++) {
 
-      var locator = result[ 0 ];
+          for (var r = 0; r < 16; r++) {
 
-      var created = result[ 1 ];
+            var unit = [self.pad(r+1, 2), self.pad(c+1, 2)].join('_');
 
-      var loader = new TextureLoader();
-      loader.setCrossOrigin("anonymous");
+            var tile = url.replace('.JPG', '_' + unit + '.png');
 
-      if ( created ) {
-        setTimeout(function(){
-          loader.load( tile, function ( unitTexture ) {
-            self.roomSphere.geometry.switchUvSystem( locator.uvSystem );
-            locator.setTexture( unitTexture );
-          } );
-        }, 1000);
-      }
+            var patchTex = function ( tile, r, c) {
+              return function(unitTexture) {
+                console.log(tile);
+                self.roomSphere.material.map.patchTexture(unitTexture, c*256/4, 2048-r*128/4);
+              }
+            };
+
+            loader.load( tile, patchTex(tile, r, c) );
+          }
+        }
+      }, 2000);
     });
+
   }
 
   loadPano(url, successCb, failureCb, progressCb) {
