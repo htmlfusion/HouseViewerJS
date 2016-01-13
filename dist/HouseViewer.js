@@ -141,13 +141,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.raycaster = new _threeJs.Raycaster();
 
 	      function animate(timestamp) {
-	        // Update VR headset position and apply to camera.
-	        controls.update();
-	        // Render the scene through the manager.
-	        self.manager.render(self.scene, self.camera, timestamp);
-	        self.updateRaycaster();
-	        requestAnimationFrame(animate);
+	        setTimeout(function () {
+	          // Update VR headset position and apply to camera.
+	          controls.update();
+	          // Render the scene through the manager.
+	          self.manager.render(self.scene, self.camera, timestamp);
+	          requestAnimationFrame(animate);
+	        }, 1000 / 30);
 	      }
+
+	      window.addEventListener("devicemotion", function () {
+	        self.updateRaycaster();
+	      }, true);
 
 	      // Kick off animation loop
 	      animate();
