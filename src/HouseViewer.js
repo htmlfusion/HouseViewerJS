@@ -11,7 +11,6 @@ export default class {
   constructor() {
     this.rooms = {};
     this.activeDoor = null;
-    this.textureCache = {};
     this.loadTimeOut = null;
   }
 
@@ -130,8 +129,6 @@ export default class {
     var self = this;
     this.rooms = {};
     this.house = house;
-    delete this.textureCache;
-    this.textureCache = {};
     this.house.data.house.rooms.forEach(function(room) {
       self.rooms[room.id] = room;
     });
@@ -225,14 +222,6 @@ export default class {
     var loader = new TextureLoader();
     loader.setCrossOrigin("anonymous");
 
-    if (self.textureCache[url]) {
-      self.roomSphere.material = self.textureCache[url];
-      if (successCb) {
-        successCb();
-      }
-      return;
-    }
-
     // load a resource
     loader.load(
       // resource URL
@@ -242,7 +231,6 @@ export default class {
         // do something with the texture
         var material = new MeshBasicMaterial( {map: texture} );
         self.roomSphere.material = material;
-        self.textureCache[url] = material;
         if (successCb) {
           successCb(texture);
         }
