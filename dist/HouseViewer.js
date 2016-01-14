@@ -82,7 +82,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  function _default() {
 	    _classCallCheck(this, _default);
 
-	    this.rootUrl = 'http://htmlfusion-open-house.s3-website-us-west-1.amazonaws.com/houses/';
+	    this.lowResUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/low/R{room}.JPG';
+	    this.tileUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/tiles/{col}_{row}/R{room}.JPG';
 	    this.rooms = {};
 	    this.activeDoor = null;
 	    this.textureCache = {};
@@ -212,10 +213,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function setHouse(house) {
 	      var self = this;
 	      this.rooms = {};
-	      this.house = house;
+	      this.house = house.data.house;
 	      delete this.textureCache;
 	      this.textureCache = {};
-	      this.house.data.house.rooms.forEach(function (room) {
+	      this.house.rooms.forEach(function (room) {
 	        self.rooms[room.id] = room;
 	      });
 	    }
@@ -261,6 +262,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var heading = _threeJs.Math.degToRad(360) - _threeJs.Math.degToRad(room.heading);
 	        doors.rotation.y = heading;
 	        self.roomSphere.rotation.y = heading;
+	        self.roomSphereLow.rotation.y = heading;
 	        self.scene.add(doors);
 	        self.currentDoors = doors;
 
@@ -269,29 +271,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	      };
 
-	      self.loadPanoTiles(room.image, onRoomLoad, onRoomLoad);
-	    }
-	  }, {
-	    key: 'loadPanoProgressive',
-	    value: function loadPanoProgressive(url, successCb, failureCb, progressCb) {
-	      var self = this;
-
-	      clearTimeout(self.loadTimeOut);
-
-	      self.loadPano(url.replace('.JPG', '_low.JPG'), function () {
-
-	        // If we successfully load the low res version, call success immediately
-	        successCb();
-	        self.loadTimeOut = setTimeout(function () {
-	          self.loadPanoTiles(url);
-	        }, 1000);
-
-	        // If we fail to load the low res version, pass the success callback to  the high res loader
-	      }, function () {
-	        self.loadTimeOut = setTimeout(function () {
-	          self.loadPanoTiles(url, successCb, failureCb);
-	        }, 1000);
-	      }, progressCb);
+	      self.loadPanoTiles(room, onRoomLoad, onRoomLoad);
 	    }
 	  }, {
 	    key: 'pad',
@@ -302,14 +282,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: 'loadPanoTiles',
-	    value: function loadPanoTiles(url, failureCb, progressCB) {
+	    value: function loadPanoTiles(room, failureCb, progressCB) {
 	      var self = this;
 
 	      var loader = new _threeJs.TextureLoader();
 
 	      loader.setCrossOrigin("anonymous");
 
-	      loader.load(url.replace('.JPG', '_low.JPG'), function (texture) {
+	      loader.load(this.lowResUrl.replace('{house}', self.house.id).replace('{room}', room.id), function (texture) {
 	        var material = new _threeJs.MeshBasicMaterial({ map: texture });
 	        self.roomSphereLow.material = material;
 	      });
@@ -317,21 +297,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	      setTimeout(function () {
 
 	        var offset = 0;
-	        for (var c = 0; c < 16; c++) {
+	        for (var c = 1; c < 17; c++) {
 
-	          for (var r = 0; r < 16; r++) {
+	          for (var r = 1; r < 17; r++) {
 
 	            var makeTile = function makeTile(c, r) {
 
 	              return function () {
-	                var unit = [self.pad(r + 1, 2), self.pad(c + 1, 2)].join('_');
 
-	                var tile = url.replace('.JPG', '_' + unit + '.png');
+	                var tile = self.tileUrl.replace('{house}', self.house.id).replace('{room}', room.id).replace('{col}', c).replace('{row}', r);
 
 	                var patchTex = function patchTex(tile, r, c) {
 	                  return function (unitTexture) {
 	                    console.log(tile);
-	                    self.roomSphere.material.map.patchTexture(unitTexture, c * 256, 2048 - r * 128 - 128);
+	                    self.roomSphere.material.map.patchTexture(unitTexture, (c - 1) * 256, 2048 - (r - 1) * 128 - 128);
 	                  };
 	                };
 

@@ -10,7 +10,8 @@ export default class {
 
 
   constructor() {
-    this.rootUrl = 'http://htmlfusion-open-house.s3-website-us-west-1.amazonaws.com/houses/';
+    this.lowResUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/low/R{room}.JPG';
+    this.tileUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/tiles/{col}_{row}/R{room}.JPG';
     this.rooms = {};
     this.activeDoor = null;
     this.textureCache = {};
@@ -135,10 +136,10 @@ export default class {
   setHouse(house) {
     var self = this;
     this.rooms = {};
-    this.house = house;
+    this.house = house.data.house;
     delete this.textureCache;
     this.textureCache = {};
-    this.house.data.house.rooms.forEach(function(room) {
+    this.house.rooms.forEach(function(room) {
       self.rooms[room.id] = room;
     });
   }
@@ -184,6 +185,7 @@ export default class {
       var heading = Math.degToRad(360) - Math.degToRad(room.heading);
       doors.rotation.y = heading;
       self.roomSphere.rotation.y = heading;
+      self.roomSphereLow.rotation.y = heading;
       self.scene.add( doors );
       self.currentDoors = doors;
 
@@ -192,28 +194,7 @@ export default class {
       }
     };
 
-    self.loadPanoTiles(room.image, onRoomLoad, onRoomLoad);
-  }
-
-  loadPanoProgressive(url, successCb, failureCb, progressCb) {
-    var self = this;
-
-    clearTimeout(self.loadTimeOut);
-
-    self.loadPano(url.replace('.JPG', '_low.JPG'), function(){
-
-      // If we successfully load the low res version, call success immediately
-      successCb();
-      self.loadTimeOut = setTimeout(function() {
-        self.loadPanoTiles(url);
-      }, 1000);
-
-      // If we fail to load the low res version, pass the success callback to  the high res loader
-    }, function(){
-      self.loadTimeOut = setTimeout(function() {
-        self.loadPanoTiles(url, successCb, failureCb);
-      }, 1000);
-    }, progressCb);
+    self.loadPanoTiles(room, onRoomLoad, onRoomLoad);
   }
 
   pad(n, width, z) {
@@ -223,14 +204,14 @@ export default class {
   }
 
 
-  loadPanoTiles(url, failureCb, progressCB) {
+  loadPanoTiles(room, failureCb, progressCB) {
     var self = this;
 
     var loader = new TextureLoader();
 
     loader.setCrossOrigin("anonymous");
 
-    loader.load(url.replace('.JPG', '_low.JPG'), function(texture) {
+    loader.load(this.lowResUrl.replace('{house}', self.house.id).replace('{room}', room.id), function(texture) {
       var material = new MeshBasicMaterial( {map: texture} );
       self.roomSphereLow.material = material;
     });
@@ -238,21 +219,24 @@ export default class {
     setTimeout(function(){
 
       var offset = 0;
-      for (var c = 0; c < 16; c++) {
+      for (var c = 1; c < 17; c++) {
 
-        for (var r = 0; r < 16; r++) {
+        for (var r = 1; r < 17; r++) {
 
           var makeTile = function(c, r) {
 
             return function() {
-              var unit = [self.pad(r+1, 2), self.pad(c+1, 2)].join('_');
 
-              var tile = url.replace('.JPG', '_' + unit + '.png');
+              var tile = self.tileUrl
+                .replace('{house}', self.house.id)
+                .replace('{room}', room.id)
+                .replace('{col}', c)
+                .replace('{row}', r);
 
               var patchTex = function ( tile, r, c) {
                 return function(unitTexture) {
                   console.log(tile);
-                  self.roomSphere.material.map.patchTexture(unitTexture, c*256, (2048-r*128)-128);
+                  self.roomSphere.material.map.patchTexture(unitTexture, (c-1)*256, (2048-(r-1)*128)-128);
                 }
               };
 
