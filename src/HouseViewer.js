@@ -84,7 +84,7 @@ export default class {
         // Render the scene through the manager.
         self.manager.render(self.scene, self.camera, timestamp);
         requestAnimationFrame(animate);
-      }, 1000/30);
+      }, 1000/60);
     }
 
     window.addEventListener("devicemotion", function(){
@@ -215,7 +215,7 @@ export default class {
   }
 
 
-  loadPanoTiles(room, failureCb, progressCB) {
+  loadPanoTiles(room, successCb, failureCb) {
     var self = this;
 
     var loader = new TextureLoader();
@@ -225,6 +225,9 @@ export default class {
     loader.load(this.lowResUrl.replace('{house}', self.house.id).replace('{room}', room.id), function(texture) {
       var material = new MeshBasicMaterial( {map: texture} );
       self.roomSphereLow.material = material;
+      if (successCb) {
+        successCb();
+      }
     });
 
     setTimeout(function(){

@@ -158,7 +158,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          // Render the scene through the manager.
 	          self.manager.render(self.scene, self.camera, timestamp);
 	          requestAnimationFrame(animate);
-	        }, 1000 / 30);
+	        }, 1000 / 60);
 	      }
 
 	      window.addEventListener("devicemotion", function () {
@@ -292,7 +292,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: 'loadPanoTiles',
-	    value: function loadPanoTiles(room, failureCb, progressCB) {
+	    value: function loadPanoTiles(room, successCb, failureCb) {
 	      var self = this;
 
 	      var loader = new _threeJs.TextureLoader();
@@ -302,6 +302,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	      loader.load(this.lowResUrl.replace('{house}', self.house.id).replace('{room}', room.id), function (texture) {
 	        var material = new _threeJs.MeshBasicMaterial({ map: texture });
 	        self.roomSphereLow.material = material;
+	        if (successCb) {
+	          successCb();
+	        }
 	      });
 
 	      setTimeout(function () {
