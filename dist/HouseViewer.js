@@ -86,7 +86,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.tileUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/tiles/{col}_{row}/R{room}.JPG';
 	    this.rooms = {};
 	    this.activeDoor = null;
-	    this.textureCache = {};
 	    this.loadTimeOut = null;
 	  }
 
@@ -153,13 +152,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.raycaster = new _threeJs.Raycaster();
 
 	      function animate(timestamp) {
-	        // Update VR headset position and apply to camera.
-	        controls.update();
-	        // Render the scene through the manager.
-	        self.manager.render(self.scene, self.camera, timestamp);
-	        self.updateRaycaster();
-	        requestAnimationFrame(animate);
+	        setTimeout(function () {
+	          // Update VR headset position and apply to camera.
+	          controls.update();
+	          // Render the scene through the manager.
+	          self.manager.render(self.scene, self.camera, timestamp);
+	          requestAnimationFrame(animate);
+	        }, 1000 / 30);
 	      }
+
+	      window.addEventListener("devicemotion", function () {
+	        self.updateRaycaster();
+	      }, true);
 
 	      // Kick off animation loop
 	      animate();
@@ -214,8 +218,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var self = this;
 	      this.rooms = {};
 	      this.house = house.data.house;
-	      delete this.textureCache;
-	      this.textureCache = {};
 	      this.house.rooms.forEach(function (room) {
 	        self.rooms[room.id] = room;
 	      });
@@ -225,12 +227,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function loadRoom(roomId, successCb, failureCb, progressCb) {
 	      var self = this;
 	      var room = this.rooms[roomId];
+	      var heading = _threeJs.Math.degToRad(360) - _threeJs.Math.degToRad(room.heading);
 
 	      if (self.currentDoors) {
 	        this.scene.remove(self.currentDoors);
 	      }
 
+	      // When low resolution is loaded, we'll setup the sphere to be oriented correctly
+	      var basicInit = function basicInit() {
+	        self.roomSphere.rotation.y = heading;
+	      };
+
+	      // Once the high resolution is loaded, we'll complete the room setup
 	      var onRoomLoad = function onRoomLoad() {
+
+	        basicInit();
+
 	        var doors = new _threeJs.Object3D();
 
 	        room.passages.forEach(function (passage) {
@@ -259,9 +271,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          doors.add(door);
 	        });
 
-	        var heading = _threeJs.Math.degToRad(360) - _threeJs.Math.degToRad(room.heading);
 	        doors.rotation.y = heading;
-	        self.roomSphere.rotation.y = heading;
 	        self.roomSphereLow.rotation.y = heading;
 	        self.scene.add(doors);
 	        self.currentDoors = doors;
@@ -333,14 +343,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var loader = new _threeJs.TextureLoader();
 	      loader.setCrossOrigin("anonymous");
 
-	      if (self.textureCache[url]) {
-	        self.roomSphere.material = self.textureCache[url];
-	        if (successCb) {
-	          successCb();
-	        }
-	        return;
-	      }
-
 	      // load a resource
 	      loader.load(
 	      // resource URL
@@ -350,7 +352,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // do something with the texture
 	        var material = new _threeJs.MeshBasicMaterial({ map: texture });
 	        self.roomSphere.material = material;
-	        self.textureCache[url] = material;
 	        if (successCb) {
 	          successCb(texture);
 	        }

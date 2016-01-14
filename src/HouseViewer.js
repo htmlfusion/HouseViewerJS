@@ -14,7 +14,6 @@ export default class {
     this.tileUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/tiles/{col}_{row}/R{room}.JPG';
     this.rooms = {};
     this.activeDoor = null;
-    this.textureCache = {};
     this.loadTimeOut = null;
   }
 
@@ -79,13 +78,19 @@ export default class {
     this.raycaster = new Raycaster();
 
     function animate(timestamp) {
-      // Update VR headset position and apply to camera.
-      controls.update();
-      // Render the scene through the manager.
-      self.manager.render(self.scene, self.camera, timestamp);
-      self.updateRaycaster();
-      requestAnimationFrame(animate);
+      setTimeout(function(){
+        // Update VR headset position and apply to camera.
+        controls.update();
+        // Render the scene through the manager.
+        self.manager.render(self.scene, self.camera, timestamp);
+        requestAnimationFrame(animate);
+      }, 1000/30);
     }
+
+    window.addEventListener("devicemotion", function(){
+      self.updateRaycaster();
+    }, true);
+
 
     // Kick off animation loop
     animate();
@@ -137,8 +142,6 @@ export default class {
     var self = this;
     this.rooms = {};
     this.house = house.data.house;
-    delete this.textureCache;
-    this.textureCache = {};
     this.house.rooms.forEach(function(room) {
       self.rooms[room.id] = room;
     });
@@ -147,12 +150,22 @@ export default class {
   loadRoom(roomId, successCb, failureCb, progressCb) {
     var self = this;
     var room = this.rooms[roomId];
+    var heading = Math.degToRad(360) - Math.degToRad(room.heading);
 
     if (self.currentDoors) {
       this.scene.remove(self.currentDoors);
     }
 
+    // When low resolution is loaded, we'll setup the sphere to be oriented correctly
+    var basicInit = function () {
+      self.roomSphere.rotation.y = heading;
+    };
+
+    // Once the high resolution is loaded, we'll complete the room setup
     var onRoomLoad = function(){
+
+      basicInit()
+
       var doors = new Object3D();
 
       room.passages.forEach(function(passage){
@@ -177,14 +190,12 @@ export default class {
         proxy.material.opacity = 0;
         proxy.name = "doorProxy";
 
-
         door.add(proxy);
         doors.add( door );
       });
 
-      var heading = Math.degToRad(360) - Math.degToRad(room.heading);
+
       doors.rotation.y = heading;
-      self.roomSphere.rotation.y = heading;
       self.roomSphereLow.rotation.y = heading;
       self.scene.add( doors );
       self.currentDoors = doors;
@@ -258,14 +269,6 @@ export default class {
     var loader = new TextureLoader();
     loader.setCrossOrigin("anonymous");
 
-    if (self.textureCache[url]) {
-      self.roomSphere.material = self.textureCache[url];
-      if (successCb) {
-        successCb();
-      }
-      return;
-    }
-
     // load a resource
     loader.load(
       // resource URL
@@ -275,7 +278,6 @@ export default class {
         // do something with the texture
         var material = new MeshBasicMaterial( {map: texture} );
         self.roomSphere.material = material;
-        self.textureCache[url] = material;
         if (successCb) {
           successCb(texture);
         }
