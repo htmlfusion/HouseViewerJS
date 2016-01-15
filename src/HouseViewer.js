@@ -14,7 +14,7 @@ export default class {
     this.tileUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/tiles/{col}_{row}/R{room}.JPG';
     this.rooms = {};
     this.activeDoor = null;
-    this.loadTimeOut = null;
+    this.tileTimeouts = [];
   }
 
   init(element) {
@@ -33,7 +33,7 @@ export default class {
     this.scene = new Scene();
 
     // Create a three.js camera.
-    this.camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 500, 5000);
+    this.camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 10, 6000);
 
     // Apply VR headset positional data to camera.
     var controls = new VRControls(this.camera);
@@ -52,7 +52,8 @@ export default class {
     };
     this.manager = new WebVRManager(renderer, effect, params);
 
-    var geometry = new SphereGeometry( 2000, 60, 40 );
+    var radius = 5000;
+    var geometry = new SphereGeometry( radius, 60, 40 );
     geometry.scale( - 1, 1, 1 );
 
     var texture = new GridTexture( 256, 128, 16, 16 );
@@ -60,20 +61,17 @@ export default class {
 
     this.roomSphere = new Mesh( geometry, material );
 
-    this.scene.add( this.roomSphere );
 
-    var lowResTexture = new MeshBasicMaterial( {transparent: true} );
+    var lowResTexture = new MeshBasicMaterial();
 
-    var geometry = new SphereGeometry( 2010, 60, 40 );
+    var geometry = new SphereGeometry( radius+200, 60, 40 );
     geometry.scale( - 1, 1, 1 );
 
     this.roomSphereLow = new Mesh( geometry, lowResTexture );
 
+
+    this.scene.add( this.roomSphere );
     this.scene.add( this.roomSphereLow );
-
-    var light = new AmbientLight( 0x404040 ); // soft white light
-
-    this.scene.add( light );
 
     this.raycaster = new Raycaster();
 
@@ -100,9 +98,6 @@ export default class {
     return this.manager;
   }
 
-  sample() {
-  }
-
   updateRaycaster() {
     var self = this;
     if (this.currentDoors) {
@@ -115,7 +110,7 @@ export default class {
       var intersects = this.raycaster.intersectObjects( this.currentDoors.children, true);
 
       this.currentDoors.children.forEach(function (door) {
-        door.material.opacity = 0;
+        door.material.opacity = .5;
         door.needsUpdate = true;
       });
 
@@ -168,14 +163,14 @@ export default class {
 
       var doors = new Object3D();
 
-      room.passages.forEach(function(passage){
+      room.passages.forEach(function(passage) {
 
-        var geometry = new SphereGeometry( 2, 32, 32 );
+        var geometry = new SphereGeometry( 1, 32, 32 );
         var material = new MeshBasicMaterial( {color: 0xffff00} );
         var door = new Mesh( geometry, material );
 
         door.material.transparent = true;
-        door.material.opacity = 0;
+        door.material.opacity = .5;
 
         door.position.setX( - passage.position[0] );
         door.position.setY( passage.position[1] );
@@ -184,10 +179,8 @@ export default class {
         door.passage = passage;
 
         var geometry = new CylinderGeometry( 4, 4, 40, 10 );
-        var material = new MeshBasicMaterial( { color: 0x00ff00 } );
+        var material = new MeshBasicMaterial( { color: 0x00ff00, transparent: true, opacity: 0, depthWrite: false } );
         var proxy = new Mesh( geometry, material );
-        proxy.material.transparent = true;
-        proxy.material.opacity = 0;
         proxy.name = "doorProxy";
 
         door.add(proxy);
@@ -196,6 +189,7 @@ export default class {
 
 
       doors.rotation.y = heading;
+      doors.scale.set(2,2,2);
       self.roomSphereLow.rotation.y = heading;
       self.scene.add( doors );
       self.currentDoors = doors;
@@ -214,6 +208,16 @@ export default class {
     return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
   }
 
+  clearPano() {
+    this.tileTimeouts.forEach(function(id) {
+      clearTimeout(id);
+    });
+    this.tileTimeouts = [];
+    var texture = new GridTexture( 256, 128, 16, 16 );
+    material = new MeshBasicMaterial( {map: texture, transparent: true} );
+    this.roomSphere.material = material;
+  }
+
 
   loadPanoTiles(room, successCb, failureCb) {
     var self = this;
@@ -221,6 +225,8 @@ export default class {
     var loader = new TextureLoader();
 
     loader.setCrossOrigin("anonymous");
+
+    self.clearPano();
 
     loader.load(this.lowResUrl.replace('{house}', self.house.id).replace('{room}', room.id), function(texture) {
       var material = new MeshBasicMaterial( {map: texture} );
@@ -230,7 +236,7 @@ export default class {
       }
     });
 
-    setTimeout(function(){
+    var id = setTimeout(function(){
 
       var offset = 0;
       for (var c = 1; c < 17; c++) {
@@ -258,12 +264,14 @@ export default class {
             };
           };
 
-          setTimeout(makeTile(c, r), offset * 10);
+          var id2 = setTimeout(makeTile(c, r), offset * 10);
 
           offset += 1;
+          self.tileTimeouts.push(id2);
         }
       }
-    });
+    }, 500);
+    self.tileTimeouts.push(id);
   }
 
   loadPano(url, successCb, failureCb, progressCb) {

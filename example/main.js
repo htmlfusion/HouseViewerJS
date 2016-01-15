@@ -1,7 +1,6 @@
 console.log('something');
 var houseViewer = new HouseViewer();
 houseViewer.init(document.body);
-houseViewer.sample();
 
 var houseUrl = 'https://s3-us-west-1.amazonaws.com/htmlfusion-open-house/json/1003.json';
 var xmlhttp = new XMLHttpRequest();
