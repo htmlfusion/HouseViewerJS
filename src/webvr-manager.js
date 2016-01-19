@@ -22,6 +22,9 @@ var RotateInstructions = require('./rotate-instructions.js');
 var Util = require('./util.js');
 var ViewerSelector = require('./viewer-selector.js');
 var Wakelock = require('./wakelock.js');
+var Promise = require('promise-polyfill');
+require('webvr-polyfill');
+
 
 /**
  * Helper for getting in and out of VR mode.
@@ -95,7 +98,7 @@ function WebVRManager(renderer, effect, params) {
       // Only enable distortion if we are dealing using the polyfill, we have a
       // perfect device match, and it's not prevented via configuration.
       if (hmd.deviceName.indexOf('webvr-polyfill') == 0 && this.deviceInfo.getDevice() &&
-          !WebVRConfig.PREVENT_DISTORTION) {
+        !WebVRConfig.PREVENT_DISTORTION) {
         this.distorter.setActive(true);
       }
       this.hmd = hmd;
@@ -127,11 +130,11 @@ function WebVRManager(renderer, effect, params) {
 
   // Whenever we enter fullscreen, we are entering VR or immersive mode.
   document.addEventListener('webkitfullscreenchange',
-      this.onFullscreenChange_.bind(this));
+    this.onFullscreenChange_.bind(this));
   document.addEventListener('mozfullscreenchange',
-      this.onFullscreenChange_.bind(this));
+    this.onFullscreenChange_.bind(this));
   window.addEventListener('orientationchange',
-      this.onOrientationChange_.bind(this));
+    this.onOrientationChange_.bind(this));
 
   // Create the necessary elements for wake lock to work.
   this.wakelock = new Wakelock();
@@ -382,7 +385,7 @@ WebVRManager.prototype.updateRotateInstructions_ = function() {
 WebVRManager.prototype.onFullscreenChange_ = function(e) {
   // If we leave full-screen, go back to normal mode.
   if (document.webkitFullscreenElement === null ||
-      document.mozFullScreenElement === null) {
+    document.mozFullScreenElement === null) {
     this.anyModeToNormal_();
     this.setMode_(Modes.NORMAL);
   }
@@ -391,8 +394,8 @@ WebVRManager.prototype.onFullscreenChange_ = function(e) {
 WebVRManager.prototype.requestPointerLock_ = function() {
   var canvas = this.renderer.domElement;
   canvas.requestPointerLock = canvas.requestPointerLock ||
-      canvas.mozRequestPointerLock ||
-      canvas.webkitRequestPointerLock;
+    canvas.mozRequestPointerLock ||
+    canvas.webkitRequestPointerLock;
 
   if (canvas.requestPointerLock) {
     canvas.requestPointerLock();
@@ -401,8 +404,8 @@ WebVRManager.prototype.requestPointerLock_ = function() {
 
 WebVRManager.prototype.releasePointerLock_ = function() {
   document.exitPointerLock = document.exitPointerLock ||
-      document.mozExitPointerLock ||
-      document.webkitExitPointerLock;
+    document.mozExitPointerLock ||
+    document.webkitExitPointerLock;
 
   if (document.exitPointerLock) {
     document.exitPointerLock();
@@ -470,7 +473,7 @@ WebVRManager.prototype.setHMDVRDeviceParams_ = function(viewer) {
     if (hmd.setFieldOfView) {
       // Calculate the optimal field of view for each eye.
       hmd.setFieldOfView(this.deviceInfo.getFieldOfViewLeftEye(this.isUndistorted),
-                         this.deviceInfo.getFieldOfViewRightEye(this.isUndistorted));
+        this.deviceInfo.getFieldOfViewRightEye(this.isUndistorted));
     }
 
     // Note: setInterpupillaryDistance is not part of the WebVR standard.

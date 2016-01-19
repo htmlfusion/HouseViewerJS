@@ -136,10 +136,7 @@ export default class {
   setHouse(house) {
     var self = this;
     this.rooms = {};
-    this.house = house.data.house;
-    this.house.rooms.forEach(function(room) {
-      self.rooms[room.id] = room;
-    });
+    this.house = house;
   }
 
   loadRoom(roomId, successCb, failureCb, progressCb) {

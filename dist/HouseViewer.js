@@ -74,9 +74,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _VREffect2 = _interopRequireDefault(_VREffect);
 
-	var _WebVRManager = __webpack_require__(4);
+	var _webvrManager = __webpack_require__(4);
 
-	var _WebVRManager2 = _interopRequireDefault(_WebVRManager);
+	var _webvrManager2 = _interopRequireDefault(_webvrManager);
 
 	var _default = (function () {
 	  function _default() {
@@ -124,7 +124,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        hideButton: false, // Default: false.
 	        isUndistorted: false // Default: false.
 	      };
-	      this.manager = new _WebVRManager2['default'](renderer, effect, params);
+	      this.manager = new _webvrManager2['default'](renderer, effect, params);
 
 	      var radius = 5000;
 	      var geometry = new _threeJs.SphereGeometry(radius, 60, 40);
@@ -210,10 +210,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function setHouse(house) {
 	      var self = this;
 	      this.rooms = {};
-	      this.house = house.data.house;
-	      this.house.rooms.forEach(function (room) {
-	        self.rooms[room.id] = room;
-	      });
+	      this.house = house;
 	    }
 	  }, {
 	    key: 'loadRoom',
