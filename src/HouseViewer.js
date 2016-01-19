@@ -4,7 +4,7 @@ import {
 } from 'three.js';
 import VRControls from './VRControls';
 import VREffect from './VREffect';
-import WebVRManager from './WebVRManager';
+import WebVRManager from './webvr-manager';
 
 export default class {
 
