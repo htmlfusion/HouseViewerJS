@@ -1,6 +1,7 @@
 import {
   Scene, WebGLRenderer, PerspectiveCamera, SphereGeometry, MeshBasicMaterial, Mesh, TextureLoader, AmbientLight,
-  Object3D, Math, Raycaster, Vector2, CylinderGeometry, GridTexture, LineBasicMaterial
+  Object3D, Raycaster, Vector2, CylinderGeometry, GridTexture, LineBasicMaterial, ShaderMaterial, ImageUtils,
+  DoubleSide, Matrix4, Vector3, Geometry, Face3, GridHelper, WireframeHelper
 } from 'three.js';
 import VRControls from './VRControls';
 import VREffect from './VREffect';
@@ -15,6 +16,8 @@ export default class {
     this.rooms = {};
     this.activeDoor = null;
     this.tileTimeouts = [];
+    this.previousShot = null;
+    this.imagePlane = null;
   }
 
   init(element) {
@@ -32,11 +35,18 @@ export default class {
     // Create a three.js scene.
     this.scene = new Scene();
 
+
+    var size = 10;
+    var step = 1;
+
+    //var gridHelper = new GridHelper( size, step );
+    //this.scene.add( gridHelper );
+
     // Create a three.js camera.
-    this.camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 10, 6000);
+    this.camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.03, 10000);
 
     // Apply VR headset positional data to camera.
-    var controls = new VRControls(this.camera);
+    this.controls = new VRControls(this.camera);
 
     // Apply VR stereo rendering to renderer.
     var effect = new VREffect(renderer);
@@ -53,41 +63,25 @@ export default class {
     this.manager = new WebVRManager(renderer, effect, params);
 
     var radius = 5000;
-    var geometry = new SphereGeometry( radius, 60, 40 );
-    geometry.scale( - 1, 1, 1 );
 
     var texture = new GridTexture( 256, 128, 16, 16 );
     material = new MeshBasicMaterial( {map: texture, transparent: true} );
-
-    this.roomSphere = new Mesh( geometry, material );
-
-
-    var lowResTexture = new MeshBasicMaterial();
-
-    var geometry = new SphereGeometry( radius+200, 60, 40 );
-    geometry.scale( - 1, 1, 1 );
-
-    this.roomSphereLow = new Mesh( geometry, lowResTexture );
-
-
-    this.scene.add( this.roomSphere );
-    this.scene.add( this.roomSphereLow );
 
     this.raycaster = new Raycaster();
 
     function animate(timestamp) {
       setTimeout(function(){
         // Update VR headset position and apply to camera.
-        controls.update();
+        self.controls.update();
         // Render the scene through the manager.
         self.manager.render(self.scene, self.camera, timestamp);
         requestAnimationFrame(animate);
       }, 1000/60);
     }
 
-    window.addEventListener("devicemotion", function(){
-      self.updateRaycaster();
-    }, true);
+    //window.addEventListener("devicemotion", function(){
+    //  self.updateRaycaster();
+    //}, true);
 
 
     // Kick off animation loop
@@ -100,103 +94,264 @@ export default class {
 
   updateRaycaster() {
     var self = this;
-    if (this.currentDoors) {
-
-      this.activeDoor = null;
-
-      this.raycaster.setFromCamera( this.screenCenter, this.camera );
-
-      // See if the ray from the camera into the world hits one of our meshes
-      var intersects = this.raycaster.intersectObjects( this.currentDoors.children, true);
-
-      this.currentDoors.children.forEach(function (door) {
-        door.material.opacity = .5;
-        door.needsUpdate = true;
-      });
-
-      // Toggle rotation bool for meshes that we clicked
-      if ( intersects.length > 0 ) {
-        intersects.forEach(function(collision){
-          var door;
-          if (collision.object.name === 'doorProxy') {
-            door = collision.object.parent;
-          } else {
-            door = collision.object;
-          }
-
-          self.activeDoor = door;
-
-          door.material.opacity = 1;
-          door.needsUpdate = true;
-        });
-      }
-    }
   }
 
   setHouse(house) {
-    var self = this;
-    this.rooms = {};
-    this.house = house;
+    this.house = house[0];
+    this.camera.reconstruction = this.house;
   }
 
   loadRoom(roomId, successCb, failureCb, progressCb) {
-    var self = this;
-    var room = this.rooms[roomId];
-    var heading = Math.degToRad(360) - Math.degToRad(room.heading);
+    this.camera.shot_id = 'R0010357_20160113131925.JPG';
+    var shot = this.camera.reconstruction.shots[this.camera.shot_id];
+    var position = this.opticalCenter(shot);
 
-    if (self.currentDoors) {
-      this.scene.remove(self.currentDoors);
-    }
+    this.camera.position.x = position.x;
+    this.camera.position.y = position.y;
+    this.camera.position.z = position.z;
+    var parent = new Object3D();
 
-    // When low resolution is loaded, we'll setup the sphere to be oriented correctly
-    var basicInit = function () {
-      self.roomSphere.rotation.y = heading;
-    };
-
-    // Once the high resolution is loaded, we'll complete the room setup
-    var onRoomLoad = function(){
-
-      basicInit()
-
-      var doors = new Object3D();
-
-      room.passages.forEach(function(passage) {
-
-        var geometry = new SphereGeometry( 1, 32, 32 );
-        var material = new MeshBasicMaterial( {color: 0xffff00} );
-        var door = new Mesh( geometry, material );
-
-        door.material.transparent = true;
-        door.material.opacity = .5;
-
-        door.position.setX( - passage.position[0] );
-        door.position.setY( passage.position[1] );
-        door.position.setZ( passage.position[2] );
-        door.name = "door";
-        door.passage = passage;
-
-        var geometry = new CylinderGeometry( 4, 4, 40, 10 );
-        var material = new MeshBasicMaterial( { color: 0x00ff00, transparent: true, opacity: 0, depthWrite: false } );
-        var proxy = new Mesh( geometry, material );
-        proxy.name = "doorProxy";
-
-        door.add(proxy);
-        doors.add( door );
-      });
+    parent.position.x = position.x;
+    parent.position.y = position.y;
+    parent.position.z = position.z;
 
 
-      doors.rotation.y = heading;
-      doors.scale.set(2,2,2);
-      self.roomSphereLow.rotation.y = heading;
-      self.scene.add( doors );
-      self.currentDoors = doors;
+    var cam = this.camera.reconstruction.cameras[shot.camera];
+    this.imagePlane = new Mesh();
+    this.imagePlane.position.x = position.x * -1;
+    this.imagePlane.position.y = position.y * -1;
+    this.imagePlane.position.z = position.z * -1;
+    this.imagePlane.material = this.createImagePlaneMaterial(cam, shot, this.camera.shot_id)
+    this.imagePlane.geometry = this.imagePlaneGeo(this.camera.reconstruction, this.camera.shot_id);
 
-      if(successCb) {
-        successCb();
+    parent.add(this.imagePlane);
+    parent.rotation.x = -shot.rotation[0];
+
+    this.scene.add(parent);
+
+    //var wireframe = new WireframeHelper( this.imagePlane, 0x00ff00 );
+    //this.scene.add(wireframe);
+
+    this.imagePlane.geometry.needsUpdate = true;
+
+    //this.setImagePlaneCamera(this.camera);
+    //self.loadPanoTiles(room, onRoomLoad, onRoomLoad);
+  }
+
+  setImagePlaneCamera(cameraObject) {
+    var r = cameraObject.reconstruction;
+    var shot_id = cameraObject.shot_id;
+    var shot = r['shots'][shot_id];
+    var cam = r['cameras'][shot['camera']];
+
+    this.imagePlane.material.uniforms.focal.value = this.imagePlane.material.uniforms.focal.value;
+    this.imagePlane.material.uniforms.k1.value = this.imagePlane.material.uniforms.k1.value;
+    this.imagePlane.material.uniforms.k2.value = this.imagePlane.material.uniforms.k2.value;
+    this.imagePlane.material.uniforms.scale_x.value = this.imagePlane.material.uniforms.scale_x.value;
+    this.imagePlane.material.uniforms.scale_y.value = this.imagePlane.material.uniforms.scale_y.value;
+
+    this.imagePlane.material = this.createImagePlaneMaterial(cam, shot, shot_id);
+    this.imagePlane.geometry = this.imagePlaneGeo(r, shot_id);
+
+    //if (this.previousShot !== cameraObject.shot_id) {
+    //  this.previousShot = cameraObject.shot_id
+    //  var image_url = this.imageURL(shot_id);
+    //
+    //  if (imagePlaneCamera !== undefined) {
+    //    if (imagePlaneCameraOld === undefined || imagePlaneCamera.shot_id !== cameraObject.shot_id) {
+    //      imagePlaneCameraOld = imagePlaneCamera;
+    //      imagePlaneOld.material.uniforms.projectorTex.value = imagePlane.material.uniforms.projectorTex.value;
+    //      imagePlaneOld.material.uniforms.projectorMat.value = imagePlane.material.uniforms.projectorMat.value;
+    //      imagePlane.material.uniforms.focal.value = imagePlane.material.uniforms.focal.value;
+    //      imagePlane.material.uniforms.k1.value = imagePlane.material.uniforms.k1.value;
+    //      imagePlane.material.uniforms.k2.value = imagePlane.material.uniforms.k2.value;
+    //      imagePlane.material.uniforms.scale_x.value = imagePlane.material.uniforms.scale_x.value;
+    //      imagePlane.material.uniforms.scale_y.value = imagePlane.material.uniforms.scale_y.value;
+    //      imagePlaneOld.material.vertexShader = imagePlane.material.vertexShader;
+    //      imagePlaneOld.material.fragmentShader = imagePlane.material.fragmentShader;
+    //      imagePlaneOld.material.needsUpdate = true;
+    //
+    //      imagePlaneOld.geometry.dispose();
+    //      imagePlaneOld.geometry = this.imagePlaneGeo(imagePlaneCameraOld.reconstruction, imagePlaneCameraOld.shot_id);
+    //    }
+    //  }
+    //
+    //  imagePlaneCamera = cameraObject;
+    //  imagePlane.material.dispose();
+    //  imagePlane.geometry.dispose();
+    //  imagePlane.material = this.createImagePlaneMaterial(cam, shot, shot_id);
+    //  imagePlane.geometry = this.imagePlaneGeo(r, shot_id);
+    // }
+  }
+
+
+  createImagePlaneMaterial(cam, shot, shot_id) {
+    ImageUtils.crossOrigin = 'anonymous';
+    var imageTexture = ImageUtils.loadTexture(this.imageURL(shot_id));
+
+    cam.width = 4096;
+    cam.height = 2048;
+
+    var material = new ShaderMaterial({
+      side: DoubleSide,
+      transparent: true,
+      depthWrite: true,
+      uniforms: {
+        projectorMat: {
+          type: 'm4',
+          value: this.projectorCameraMatrix(cam, shot)
+        },
+        projectorTex: {
+          type: 't',
+          value: imageTexture
+        },
+        opacity: {
+          type: 'f',
+          value: 1
+        },
+        focal: {
+          type: 'f',
+          value: cam.focal
+        },
+        k1: {
+          type: 'f',
+          value: cam.k1
+        },
+        k2: {
+          type: 'f',
+          value: cam.k2
+        },
+        scale_x: {
+          type: 'f',
+          value: Math.max(cam.width, cam.height) / cam.width
+        },
+        scale_y: {
+          type: 'f',
+          value: Math.max(cam.width, cam.height) / cam.height
+        }
+      },
+      vertexShader: this.imageVertexShader(),
+      fragmentShader: this.imageFragmentShader()
+    });
+
+    return material;
+  }
+
+  imageURL(shotId) {
+    return 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/9999/high/' + shotId;
+  }
+
+  opticalCenter(shot) {
+    var angleaxis = [-shot.rotation[0],
+      -shot.rotation[1],
+      -shot.rotation[2]];
+    var Rt = this.rotate(shot.translation, angleaxis);
+    Rt.negate();
+    return Rt;
+  }
+
+
+  imagePlaneGeo(reconstruction, shot_id) {
+    var shot = reconstruction.shots[shot_id];
+    var cam = reconstruction.cameras[shot.camera];
+
+    if ('vertices' in shot) {
+      var geometry = new Geometry();
+      for (var i = 0; i < shot['vertices'].length; ++i) {
+        geometry.vertices.push(
+          new Vector3(
+            shot['vertices'][i][0],
+            shot['vertices'][i][1],
+            shot['vertices'][i][2]
+          )
+        );
       }
-    };
+      for (var i = 0; i < shot['faces'].length; ++i) {
+        var v0 = shot['faces'][i][0];
+        var v1 = shot['faces'][i][1];
+        var v2 = shot['faces'][i][2];
 
-    self.loadPanoTiles(room, onRoomLoad, onRoomLoad);
+        geometry.faces.push(new Face3(v0, v1, v2));
+      }
+      return geometry;
+    } else {
+      return this.imageSphereGeoFlat(cam, shot);
+    }
+  }
+
+  imageSphereGeoFlat(cam, shot) {
+    geometry = new SphereGeometry(
+      options.imagePlaneSize,
+      20,
+      40
+    );
+    var center = this.pixelToVertex(cam, shot, 0, 0, 0);
+    geometry.applyMatrix(new Matrix4().makeTranslation(center.x, center.y, center.z));
+    return geometry;
+  }
+
+  pixelToVertex(cam, shot, u, v, scale) {
+    // Projection model:
+    // xc = R * x + t
+    // u = focal * xc / zc
+    // v = focal * yc / zc
+
+    var zc = scale;
+    var xc = u / cam.focal * zc;
+    var yc = v / cam.focal * zc;
+
+    var xct = [xc - shot.translation[0],
+      yc - shot.translation[1],
+      zc - shot.translation[2]];
+
+
+    var angleaxis = [-shot.rotation[0],
+      -shot.rotation[1],
+      -shot.rotation[2]];
+
+    return this.rotate(xct, angleaxis);
+  }
+
+  rotate(vector, angleaxis) {
+    var v = new Vector3(vector[0], vector[1], vector[2]);
+    var axis = new Vector3(angleaxis[0],
+      angleaxis[1],
+      angleaxis[2]);
+    var angle = axis.length();
+    axis.normalize();
+    var matrix = new Matrix4().makeRotationAxis(axis, angle);
+    v.applyMatrix4(matrix);
+    return v;
+  }
+
+  imageVertexShader() {
+    return require('./shaders/vertexshaderEquirectangular');
+  }
+
+  imageFragmentShader() {
+    return require('./shaders/fragmentshaderEquirectangular');
+  }
+
+  projectorCameraMatrix(cam, shot) {
+    var angleaxis = shot.rotation;
+    var axis = new Vector3(angleaxis[0],
+      angleaxis[1],
+      angleaxis[2]);
+    var angle = axis.length();
+    axis.normalize();
+    var rotation = new Matrix4().makeRotationAxis(axis, angle);
+    var t = shot.translation;
+    var translation = new Vector3(t[0], t[1], t[2]);
+    rotation.setPosition(translation);
+
+    return rotation;
+
+    if (cam.projection_type == 'equirectangular' || cam.projection_type == 'spherical')
+      return rotation
+    var dx = cam.width / Math.max(cam.width, cam.height) / cam.focal;
+    var dy = cam.height / Math.max(cam.width, cam.height) / cam.focal;
+    var projection = new Matrix4().makeFrustum(-dx, +dx, +dy, -dy, -1, -1000);
+    return projection.multiply(rotation);
   }
 
   pad(n, width, z) {

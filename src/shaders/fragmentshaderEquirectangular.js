@@ -1,4 +1,5 @@
-var shader = `#ifdef GL_ES
+var shader = `
+#ifdef GL_ES
 precision highp float;
 #endif
 
@@ -18,6 +19,7 @@ void main()
   vec4 baseColor = texture2D(projectorTex, vec2(x, y));
   baseColor.a = opacity;
   gl_FragColor = baseColor;
-}`;
+}
+`;
 
 module.exports = shader;

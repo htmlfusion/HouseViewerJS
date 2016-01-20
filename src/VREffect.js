@@ -142,8 +142,8 @@ export default function ( renderer, onError ) {
       camera.matrixWorld.decompose( cameraL.position, cameraL.quaternion, cameraL.scale );
       camera.matrixWorld.decompose( cameraR.position, cameraR.quaternion, cameraR.scale );
 
-      cameraL.translateX( eyeTranslationL.x * this.scale );
-      cameraR.translateX( eyeTranslationR.x * this.scale );
+      cameraL.translateX( eyeTranslationL.x * this.scale * 2);
+      cameraR.translateX( eyeTranslationR.x * this.scale * 2);
 
       // render left eye
       renderer.setViewport( 0, 0, size.width, size.height );
