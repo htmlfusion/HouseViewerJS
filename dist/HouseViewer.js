@@ -178,6 +178,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'loadRoom',
 	    value: function loadRoom(roomId, successCb, failureCb, progressCb) {
 	      this.camera.shot_id = 'R0010357_20160113131925.JPG';
+	      this.camera.shot_id = 'R0010344_20160113131531.JPG';
+	      this.camera.shot_id = 'R0010369_20160113135014.JPG';
 	      var shot = this.camera.reconstruction.shots[this.camera.shot_id];
 	      var position = this.opticalCenter(shot);
 
@@ -199,7 +201,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.imagePlane.geometry = this.imagePlaneGeo(this.camera.reconstruction, this.camera.shot_id);
 
 	      parent.add(this.imagePlane);
-	      parent.rotation.x = -shot.rotation[0];
+	      parent.rotation.x = -Math.PI / 2;
 
 	      this.scene.add(parent);
 
