@@ -214,7 +214,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function goto(vector) {
 	      var self = this;
 	      var start = this.camera.position.clone();
-	      var duration = 1000;
+	      var duration = 10000;
 
 	      // Animate camera
 	      var tween = new _tweenJs2['default'].Tween(start).to(vector, duration).onUpdate(function () {
@@ -223,15 +223,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }).start();
 
 	      // Fade out the old image plane
-	      var fadeOut = new _tweenJs2['default'].Tween({ opacity: 1 }).to({ opacity: 0 }, duration).onUpdate(function () {
+	      var crossFade = new _tweenJs2['default'].Tween({ opacity: 1 }).to({ opacity: 0 }, duration).onUpdate(function () {
 	        console.log(this.opacity);
+	        var opacityIn = 1 - this.opacity;
 	        if (self.imagePlane) {
-	          //self.imagePlane.material.opacity = this.opacity
-	          //self.imagePlane.material.needsUpdate = true;
+	          self.imagePlane.material.uniforms.opacity.value = this.opacity;
+	          self.imagePlane.material.needsUpdate = true;
+
+	          self.toImagePlane.material.uniforms.opacity.value = opacityIn;
+	          self.toImagePlane.material.needsUpdate = true;
 	        }
 	      }).start();
 
-	      fadeOut.onComplete(function () {
+	      crossFade.onComplete(function () {
 	        if (self.imagePlane) {
 	          self.imagePlane.material.dispose();
 	          self.imagePlane.geometry.dispose();
@@ -239,7 +243,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        self.imagePlane = self.toImagePlane;
-	        self.imagePlane.material.opacity = 1;
+	        self.imagePlane.material.uniforms.opacity.value = 1;
 	        self.imagePlane.material.needsUpdate = true;
 	      });
 	    }

@@ -141,7 +141,7 @@ export default class {
   goto(vector) {
     var self = this;
     var start = this.camera.position.clone();
-    var duration = 1000;
+    var duration = 10000;
 
     // Animate camera
     var tween = new TWEEN.Tween(start)
@@ -153,27 +153,30 @@ export default class {
       .start();
 
     // Fade out the old image plane
-    var fadeOut = new TWEEN.Tween({opacity: 1})
+    var crossFade = new TWEEN.Tween({opacity: 1})
       .to({opacity: 0}, duration)
       .onUpdate(function() {
         console.log(this.opacity);
+        var opacityIn = 1 - this.opacity;
         if (self.imagePlane) {
-          //self.imagePlane.material.opacity = this.opacity
-          //self.imagePlane.material.needsUpdate = true;
+          self.imagePlane.material.uniforms.opacity.value = this.opacity;
+          self.imagePlane.material.needsUpdate = true;
+
+          self.toImagePlane.material.uniforms.opacity.value = opacityIn
+          self.toImagePlane.material.needsUpdate = true;
         }
       })
       .start();
 
-    fadeOut.onComplete(function() {
+    crossFade.onComplete(function() {
       if (self.imagePlane) {
         self.imagePlane.material.dispose();
         self.imagePlane.geometry.dispose();
         self.scene.remove(self.imagePlane);
-
       }
 
       self.imagePlane = self.toImagePlane
-      self.imagePlane.material.opacity = 1;
+      self.imagePlane.material.uniforms.opacity.value = 1;
       self.imagePlane.material.needsUpdate = true;
     })
   }
