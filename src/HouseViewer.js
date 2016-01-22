@@ -141,7 +141,9 @@ export default class {
   goto(vector) {
     var self = this;
     var start = this.camera.position.clone();
-    var duration = 10000;
+    var distance = start.distanceTo(vector);
+
+    var duration = distance * 200;
 
     // Animate camera
     var tween = new TWEEN.Tween(start)
@@ -159,9 +161,11 @@ export default class {
         console.log(this.opacity);
         var opacityIn = 1 - this.opacity;
         if (self.imagePlane) {
+          self.imagePlane.material.opacity = this.opacity;
           self.imagePlane.material.uniforms.opacity.value = this.opacity;
           self.imagePlane.material.needsUpdate = true;
 
+          self.toImagePlane.material.opacity = opacityIn
           self.toImagePlane.material.uniforms.opacity.value = opacityIn
           self.toImagePlane.material.needsUpdate = true;
         }
@@ -219,7 +223,7 @@ export default class {
       cameras.add(camera);
     } );
 
-    self.scene.add(cameras);
+    //self.scene.add(cameras);
   }
 
   loadRoom(shotId, successCb, failureCb, progressCb) {
@@ -230,6 +234,12 @@ export default class {
     var shot = this.camera.reconstruction.shots[this.camera.shot_id];
     var cam = this.camera.reconstruction.cameras[shot.camera];
     var position = this.opticalCenter(shot);
+
+    if (!self.imagePlane) {
+      self.camera.position.x = position.x;
+      self.camera.position.y = position.y;
+      self.camera.position.z = position.z;
+    }
 
     this.toImagePlane = new Mesh();
 
@@ -274,7 +284,7 @@ export default class {
         var material = new ShaderMaterial({
           side: DoubleSide,
           transparent: true,
-          depthWrite: true,
+          depthWrite: false,
           uniforms: {
             projectorMat: {
               type: 'm4',
@@ -329,7 +339,7 @@ export default class {
   }
 
   imageURL(shotId) {
-    return 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/9999/high/' + shotId;
+    return 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/9999/low/' + shotId;
   }
 
   opticalCenter(shot) {

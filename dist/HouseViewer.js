@@ -214,7 +214,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function goto(vector) {
 	      var self = this;
 	      var start = this.camera.position.clone();
-	      var duration = 10000;
+	      var distance = start.distanceTo(vector);
+
+	      var duration = distance * 200;
 
 	      // Animate camera
 	      var tween = new _tweenJs2['default'].Tween(start).to(vector, duration).onUpdate(function () {
@@ -227,9 +229,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        console.log(this.opacity);
 	        var opacityIn = 1 - this.opacity;
 	        if (self.imagePlane) {
+	          self.imagePlane.material.opacity = this.opacity;
 	          self.imagePlane.material.uniforms.opacity.value = this.opacity;
 	          self.imagePlane.material.needsUpdate = true;
 
+	          self.toImagePlane.material.opacity = opacityIn;
 	          self.toImagePlane.material.uniforms.opacity.value = opacityIn;
 	          self.toImagePlane.material.needsUpdate = true;
 	        }
@@ -287,7 +291,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        cameras.add(camera);
 	      });
 
-	      self.scene.add(cameras);
+	      //self.scene.add(cameras);
 	    }
 	  }, {
 	    key: 'loadRoom',
@@ -299,6 +303,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var shot = this.camera.reconstruction.shots[this.camera.shot_id];
 	      var cam = this.camera.reconstruction.cameras[shot.camera];
 	      var position = this.opticalCenter(shot);
+
+	      if (!self.imagePlane) {
+	        self.camera.position.x = position.x;
+	        self.camera.position.y = position.y;
+	        self.camera.position.z = position.z;
+	      }
 
 	      this.toImagePlane = new _threeJs.Mesh();
 
@@ -342,7 +352,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var material = new _threeJs.ShaderMaterial({
 	          side: _threeJs.DoubleSide,
 	          transparent: true,
-	          depthWrite: true,
+	          depthWrite: false,
 	          uniforms: {
 	            projectorMat: {
 	              type: 'm4',
@@ -397,7 +407,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'imageURL',
 	    value: function imageURL(shotId) {
-	      return 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/9999/high/' + shotId;
+	      return 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/9999/low/' + shotId;
 	    }
 	  }, {
 	    key: 'opticalCenter',
