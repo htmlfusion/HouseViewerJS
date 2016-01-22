@@ -59,6 +59,7 @@
   "dependencies": {
     "promise-polyfill": "^2.1.4",
     "three.js": "github:htmlfusion/three.js#texture-patch",
+    "tween.js": "^16.3.4",
     "webvr-polyfill": "git+https://github.com/borismus/webvr-polyfill.git"
   }
 }

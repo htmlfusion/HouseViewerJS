@@ -6,6 +6,7 @@ import {
 import VRControls from './VRControls';
 import VREffect from './VREffect';
 import WebVRManager from './webvr-manager';
+import TWEEN from 'tween.js';
 
 export default class {
 
@@ -13,11 +14,13 @@ export default class {
   constructor() {
     this.lowResUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/low/R{room}.JPG';
     this.tileUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/tiles/{col}_{row}/R{room}.JPG';
-    this.rooms = {};
-    this.activeDoor = null;
     this.tileTimeouts = [];
     this.previousShot = null;
+    this.hoverShot = null
+
+
     this.imagePlane = null;
+    this.toImagePlane = null;
   }
 
   init(element) {
@@ -79,13 +82,19 @@ export default class {
 
     function animate(timestamp) {
       setTimeout(function(){
+
         // Update ray caster
         self.updateRaycaster();
 
+        // Interpolate stuff
+        TWEEN.update(timestamp);
+
         // Update VR headset position and apply to camera.
         self.controls.update();
+
         // Render the scene through the manager.
         self.manager.render(self.scene, self.camera, timestamp);
+
         requestAnimationFrame(animate);
       }, 1000/60);
     }
@@ -122,12 +131,51 @@ export default class {
         //
         //self.retical.lookAt( worldNormal );
         self.retical.position.copy( intersects[ 0 ].point );
-        var nearest = self.nearestShot(intersects[ 0 ].point);
-        console.log(nearest.shotId);
+        self.hoverShot = self.nearestShot(intersects[ 0 ].point);
       }
 
     }
 
+  }
+
+  goto(vector) {
+    var self = this;
+    var start = this.camera.position.clone();
+    var duration = 1000;
+
+    // Animate camera
+    var tween = new TWEEN.Tween(start)
+      .to(vector, duration)
+      .onUpdate(function() {
+        console.log(this.x, this.y, this.z);
+        self.camera.position.set(this.x, this.y, this.z);
+      })
+      .start();
+
+    // Fade out the old image plane
+    var fadeOut = new TWEEN.Tween({opacity: 1})
+      .to({opacity: 0}, duration)
+      .onUpdate(function() {
+        console.log(this.opacity);
+        if (self.imagePlane) {
+          self.imagePlane.material.opacity = this.opacity
+          self.imagePlane.material.needsUpdate = true;
+        }
+      })
+      .start();
+
+    fadeOut.onComplete(function() {
+      if (self.imagePlane) {
+        self.imagePlane.material.dispose();
+        self.imagePlane.geometry.dispose();
+        self.scene.remove(self.imagePlane);
+
+      }
+
+      self.imagePlane = self.toImagePlane
+      self.imagePlane.material.opacity = 1;
+      self.imagePlane.material.needsUpdate = true;
+    })
   }
 
   nearestShot(position) {
@@ -171,29 +219,30 @@ export default class {
     self.scene.add(cameras);
   }
 
-  loadRoom(roomId, successCb, failureCb, progressCb) {
+  loadRoom(shotId, successCb, failureCb, progressCb) {
 
-    this.camera.shot_id = 'R0010357_20160113131925.JPG';
-    this.camera.shot_id = 'R0010344_20160113131531.JPG';
-    this.camera.shot_id = 'R0010348_20160113131650.JPG';
+    this.camera.shot_id = shotId;
     var shot = this.camera.reconstruction.shots[this.camera.shot_id];
     var position = this.opticalCenter(shot);
 
+    this.goto(position);
     this.camera.position.x = position.x;
     this.camera.position.y = position.y;
     this.camera.position.z = position.z;
+
     var cam = this.camera.reconstruction.cameras[shot.camera];
 
-    this.imagePlane = new Mesh();
-    this.imagePlane.material = this.createImagePlaneMaterial(cam, shot, this.camera.shot_id)
-    this.imagePlane.geometry = this.imagePlaneGeo(this.camera.reconstruction, this.camera.shot_id);
+    this.toImagePlane = new Mesh();
+    this.toImagePlane.material = this.createImagePlaneMaterial(cam, shot, this.camera.shot_id)
+    this.toImagePlane.geometry = this.imagePlaneGeo(this.camera.reconstruction, this.camera.shot_id);
 
-    this.scene.add(this.imagePlane);
 
-    var wireframe = new WireframeHelper( this.imagePlane, 0x00ff00 );
-    this.scene.add(wireframe);
+    this.scene.add(this.toImagePlane);
 
-    this.imagePlane.geometry.needsUpdate = true;
+    //var wireframe = new WireframeHelper( this.imagePlane, 0x00ff00 );
+    //this.scene.add(wireframe);
+
+    this.toImagePlane.geometry.needsUpdate = true;
 
     //this.setImagePlaneCamera(this.camera);
     //self.loadPanoTiles(room, onRoomLoad, onRoomLoad);
@@ -487,8 +536,8 @@ export default class {
   }
 
   onClick(event) {
-    if (this.activeDoor) {
-      this.loadRoom(this.activeDoor.passage.roomId);
+    if (this.hoverShot) {
+      this.loadRoom(this.hoverShot.shotId);
     }
   }
 
