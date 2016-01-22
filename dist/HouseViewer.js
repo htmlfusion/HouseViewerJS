@@ -226,8 +226,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var fadeOut = new _tweenJs2['default'].Tween({ opacity: 1 }).to({ opacity: 0 }, duration).onUpdate(function () {
 	        console.log(this.opacity);
 	        if (self.imagePlane) {
-	          self.imagePlane.material.opacity = this.opacity;
-	          self.imagePlane.material.needsUpdate = true;
+	          //self.imagePlane.material.opacity = this.opacity
+	          //self.imagePlane.material.needsUpdate = true;
 	        }
 	      }).start();
 
@@ -289,22 +289,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'loadRoom',
 	    value: function loadRoom(shotId, successCb, failureCb, progressCb) {
 
+	      var self = this;
+
 	      this.camera.shot_id = shotId;
 	      var shot = this.camera.reconstruction.shots[this.camera.shot_id];
+	      var cam = this.camera.reconstruction.cameras[shot.camera];
 	      var position = this.opticalCenter(shot);
 
-	      this.goto(position);
-	      this.camera.position.x = position.x;
-	      this.camera.position.y = position.y;
-	      this.camera.position.z = position.z;
-
-	      var cam = this.camera.reconstruction.cameras[shot.camera];
-
 	      this.toImagePlane = new _threeJs.Mesh();
-	      this.toImagePlane.material = this.createImagePlaneMaterial(cam, shot, this.camera.shot_id);
-	      this.toImagePlane.geometry = this.imagePlaneGeo(this.camera.reconstruction, this.camera.shot_id);
 
-	      this.scene.add(this.toImagePlane);
+	      this.createImagePlaneMaterial(cam, shot, this.camera.shot_id, function (material) {
+	        self.goto(position);
+	        self.camera.position.x = position.x;
+	        self.camera.position.y = position.y;
+	        self.camera.position.z = position.z;
+	        self.toImagePlane.material = material;
+	        self.toImagePlane.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
+	        self.scene.add(self.toImagePlane);
+	      });
 
 	      //var wireframe = new WireframeHelper( this.imagePlane, 0x00ff00 );
 	      //this.scene.add(wireframe);
@@ -316,56 +318,69 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: 'createImagePlaneMaterial',
-	    value: function createImagePlaneMaterial(cam, shot, shot_id) {
-	      _threeJs.ImageUtils.crossOrigin = 'anonymous';
-	      var imageTexture = _threeJs.ImageUtils.loadTexture(this.imageURL(shot_id));
-
+	    value: function createImagePlaneMaterial(cam, shot, shot_id, callback) {
+	      var self = this;
 	      cam.width = 4096;
 	      cam.height = 2048;
 
-	      var material = new _threeJs.ShaderMaterial({
-	        side: _threeJs.DoubleSide,
-	        transparent: true,
-	        depthWrite: true,
-	        uniforms: {
-	          projectorMat: {
-	            type: 'm4',
-	            value: this.projectorCameraMatrix(cam, shot)
-	          },
-	          projectorTex: {
-	            type: 't',
-	            value: imageTexture
-	          },
-	          opacity: {
-	            type: 'f',
-	            value: 1
-	          },
-	          focal: {
-	            type: 'f',
-	            value: cam.focal
-	          },
-	          k1: {
-	            type: 'f',
-	            value: cam.k1
-	          },
-	          k2: {
-	            type: 'f',
-	            value: cam.k2
-	          },
-	          scale_x: {
-	            type: 'f',
-	            value: Math.max(cam.width, cam.height) / cam.width
-	          },
-	          scale_y: {
-	            type: 'f',
-	            value: Math.max(cam.width, cam.height) / cam.height
-	          }
-	        },
-	        vertexShader: this.imageVertexShader(),
-	        fragmentShader: this.imageFragmentShader()
-	      });
+	      var loader = new _threeJs.TextureLoader();
 
-	      return material;
+	      loader.setCrossOrigin("anonymous");
+
+	      // load a resource
+	      loader.load(
+	      // resource URL
+	      this.imageURL(shot_id),
+
+	      // Function when resource is loaded
+	      function (texture) {
+
+	        var material = new _threeJs.ShaderMaterial({
+	          side: _threeJs.DoubleSide,
+	          transparent: true,
+	          depthWrite: true,
+	          uniforms: {
+	            projectorMat: {
+	              type: 'm4',
+	              value: self.projectorCameraMatrix(cam, shot)
+	            },
+	            projectorTex: {
+	              type: 't',
+	              value: texture
+	            },
+	            opacity: {
+	              type: 'f',
+	              value: 1
+	            },
+	            focal: {
+	              type: 'f',
+	              value: cam.focal
+	            },
+	            k1: {
+	              type: 'f',
+	              value: cam.k1
+	            },
+	            k2: {
+	              type: 'f',
+	              value: cam.k2
+	            },
+	            scale_x: {
+	              type: 'f',
+	              value: Math.max(cam.width, cam.height) / cam.width
+	            },
+	            scale_y: {
+	              type: 'f',
+	              value: Math.max(cam.width, cam.height) / cam.height
+	            }
+	          },
+	          vertexShader: self.imageVertexShader(),
+	          fragmentShader: self.imageFragmentShader()
+	        });
+
+	        if (callback) {
+	          callback(material);
+	        }
+	      });
 	    }
 	  }, {
 	    key: 'rotateVec',
