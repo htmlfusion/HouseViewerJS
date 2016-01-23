@@ -86,14 +86,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  function _default() {
 	    _classCallCheck(this, _default);
 
-	    this.lowResUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/low/R{room}.JPG';
-	    this.tileUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted/images/{house}/tiles/{col}_{row}/R{room}.JPG';
+	    this.rootUrl = 'https://s3.amazonaws.com/htmlfusion-openhouse-formatted';
 	    this.tileTimeouts = [];
-	    this.previousShot = null;
 	    this.hoverShot = null;
 
 	    this.imagePlane = null;
+	    this.imagePlaneLow = null;
+
 	    this.toImagePlane = null;
+	    this.toImagePlaneLow = null;
 	  }
 
 	  _createClass(_default, [{
@@ -311,90 +312,85 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 
 	      this.toImagePlane = new _threeJs.Mesh();
+	      this.toImagePlaneLow = new _threeJs.Mesh();
 
-	      this.createImagePlaneMaterial(cam, shot, this.camera.shot_id, function (material) {
+	      self.toImagePlane.material = this.createImagePlaneMaterial(cam, shot);
+	      self.toImagePlane.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
+
+	      self.toImagePlaneLow.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
+	      self.toImagePlaneLow.material = this.createImagePlaneMaterial(cam, shot);
+
+	      self.toImagePlane.geometry.computeBoundingBox();
+	      var center = self.toImagePlane.geometry.boundingBox.center();
+	      self.toImagePlaneLow.geometry.translate(-center.x, -center.y, -center.z);
+	      self.toImagePlaneLow.geometry.scale(1.1, 1.1, 1.1);
+
+	      this.loadPanoTiles(shotId, self.toImagePlane, function () {
+	        self.scene.add(self.toImagePlane);
+	        //self.scene.add(self.toImagePlaneLow);
 	        self.goto(position);
 	        self.camera.position.x = position.x;
 	        self.camera.position.y = position.y;
 	        self.camera.position.z = position.z;
-	        self.toImagePlane.material = material;
-	        self.toImagePlane.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
-	        self.scene.add(self.toImagePlane);
 	      });
 
 	      //var wireframe = new WireframeHelper( this.imagePlane, 0x00ff00 );
 	      //this.scene.add(wireframe);
 
 	      this.toImagePlane.geometry.needsUpdate = true;
-
-	      //this.setImagePlaneCamera(this.camera);
-	      //self.loadPanoTiles(room, onRoomLoad, onRoomLoad);
 	    }
 	  }, {
 	    key: 'createImagePlaneMaterial',
-	    value: function createImagePlaneMaterial(cam, shot, shot_id, callback) {
+	    value: function createImagePlaneMaterial(cam, shot) {
+
+	      var texture = new _threeJs.GridTexture(256, 128, 16, 16);
+
 	      var self = this;
 	      cam.width = 4096;
 	      cam.height = 2048;
-
-	      var loader = new _threeJs.TextureLoader();
-
-	      loader.setCrossOrigin("anonymous");
-
-	      // load a resource
-	      loader.load(
-	      // resource URL
-	      this.imageURL(shot_id),
-
-	      // Function when resource is loaded
-	      function (texture) {
-
-	        var material = new _threeJs.ShaderMaterial({
-	          side: _threeJs.DoubleSide,
-	          transparent: true,
-	          depthWrite: false,
-	          uniforms: {
-	            projectorMat: {
-	              type: 'm4',
-	              value: self.projectorCameraMatrix(cam, shot)
-	            },
-	            projectorTex: {
-	              type: 't',
-	              value: texture
-	            },
-	            opacity: {
-	              type: 'f',
-	              value: 1
-	            },
-	            focal: {
-	              type: 'f',
-	              value: cam.focal
-	            },
-	            k1: {
-	              type: 'f',
-	              value: cam.k1
-	            },
-	            k2: {
-	              type: 'f',
-	              value: cam.k2
-	            },
-	            scale_x: {
-	              type: 'f',
-	              value: Math.max(cam.width, cam.height) / cam.width
-	            },
-	            scale_y: {
-	              type: 'f',
-	              value: Math.max(cam.width, cam.height) / cam.height
-	            }
+	      var material = new _threeJs.ShaderMaterial({
+	        side: _threeJs.DoubleSide,
+	        transparent: true,
+	        depthWrite: false,
+	        uniforms: {
+	          projectorMat: {
+	            type: 'm4',
+	            value: self.projectorCameraMatrix(cam, shot)
 	          },
-	          vertexShader: self.imageVertexShader(),
-	          fragmentShader: self.imageFragmentShader()
-	        });
-
-	        if (callback) {
-	          callback(material);
-	        }
+	          projectorTex: {
+	            type: 't',
+	            value: texture
+	          },
+	          opacity: {
+	            type: 'f',
+	            value: 1
+	          },
+	          focal: {
+	            type: 'f',
+	            value: cam.focal
+	          },
+	          k1: {
+	            type: 'f',
+	            value: cam.k1
+	          },
+	          k2: {
+	            type: 'f',
+	            value: cam.k2
+	          },
+	          scale_x: {
+	            type: 'f',
+	            value: Math.max(cam.width, cam.height) / cam.width
+	          },
+	          scale_y: {
+	            type: 'f',
+	            value: Math.max(cam.width, cam.height) / cam.height
+	          }
+	        },
+	        vertexShader: self.imageVertexShader(),
+	        fragmentShader: self.imageFragmentShader()
 	      });
+
+	      return material;
 	    }
 	  }, {
 	    key: 'rotateVec',
@@ -403,6 +399,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var angle = -Math.PI / 2;
 	      vector.applyAxisAngle(axis, angle);
 	      return vector;
+	    }
+	  }, {
+	    key: 'tileURL',
+	    value: function tileURL(row, col, shotId) {
+	      return this.rootUrl + ('/images/9999/tiles/' + row + '_' + col + '/' + shotId);
 	    }
 	  }, {
 	    key: 'imageURL',
@@ -525,18 +526,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: 'loadPanoTiles',
-	    value: function loadPanoTiles(room, successCb, failureCb) {
+	    value: function loadPanoTiles(shotId, imageSphere, successCb) {
 	      var self = this;
 
 	      var loader = new _threeJs.TextureLoader();
 
 	      loader.setCrossOrigin("anonymous");
 
-	      self.clearPano();
+	      //self.clearPano();
 
-	      loader.load(this.lowResUrl.replace('{house}', self.house.id).replace('{room}', room.id), function (texture) {
-	        var material = new _threeJs.MeshBasicMaterial({ map: texture });
-	        self.roomSphereLow.material = material;
+	      loader.load(this.imageURL(shotId), function (texture) {
+	        self.toImagePlaneLow.material.uniforms.projectorTex.value = texture;
 	        if (successCb) {
 	          successCb();
 	        }
@@ -553,12 +553,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	              return function () {
 
-	                var tile = self.tileUrl.replace('{house}', self.house.id).replace('{room}', room.id).replace('{col}', c).replace('{row}', r);
+	                var tile = self.tileURL(c, r, shotId);
 
 	                var patchTex = function patchTex(tile, r, c) {
 	                  return function (unitTexture) {
-	                    console.log(tile);
-	                    self.roomSphere.material.map.patchTexture(unitTexture, (c - 1) * 256, 2048 - (r - 1) * 128 - 128);
+	                    imageSphere.material.uniforms.projectorTex.value.patchTexture(unitTexture, (c - 1) * 256, 2048 - (r - 1) * 128 - 128);
+	                    imageSphere.material.needsUpdate = true;
 	                  };
 	                };
 
