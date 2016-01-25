@@ -301,6 +301,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      var self = this;
 
+	      var prevShotId;
+	      var prevShot;
+	      var prevCam;
+
+	      if (this.camera.shot_id) {
+	        prevShotId = this.camera.shot_id;
+	        prevShot = this.camera.reconstruction.shots[prevShotId];
+	        prevCam = this.camera.reconstruction.cameras[prevShot.camera];
+	      }
+
 	      this.camera.shot_id = shotId;
 	      var shot = this.camera.reconstruction.shots[this.camera.shot_id];
 	      var cam = this.camera.reconstruction.cameras[shot.camera];
@@ -312,8 +322,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        self.camera.position.z = position.z;
 	      } else {
 	        self.clearTextureLoad();
-	        self.imagePlane.material.uniforms.projectorTex.value = null;
-	        self.imagePlane.material.needsUpdate = true;
+	        var low = self.imagePlane.material.uniforms.projectorTexLow.value;
+	        self.imagePlane.material.dispose();
+	        self.imagePlane.material = this.createImagePlaneMaterial(prevCam, prevShot);
+	        self.imagePlane.material.uniforms.projectorTexLow.value = low;
 	      }
 
 	      this.toImagePlane = new _threeJs.Mesh();
@@ -322,21 +334,21 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      self.toImagePlane.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
 
-	      self.toImagePlane.geometry.computeBoundingBox();
-	      var center = self.toImagePlane.geometry.boundingBox.center();
+	      setTimeout(function () {
 
-	      this.loadPanoLow(shotId, self.toImagePlane, function () {
-	        self.scene.add(self.toImagePlane);
-	        self.goto(position, shotId);
-	        self.camera.position.x = position.x;
-	        self.camera.position.y = position.y;
-	        self.camera.position.z = position.z;
-	      });
+	        self.loadPanoLow(shotId, self.toImagePlane, function () {
+	          self.scene.add(self.toImagePlane);
+	          self.goto(position, shotId);
+	          self.camera.position.x = position.x;
+	          self.camera.position.y = position.y;
+	          self.camera.position.z = position.z;
+	        });
 
-	      //var wireframe = new WireframeHelper( this.imagePlane, 0x00ff00 );
-	      //this.scene.add(wireframe);
+	        //var wireframe = new WireframeHelper( self.imagePlane, 0x00ff00 );
+	        //self.scene.add(wireframe);
 
-	      this.toImagePlane.geometry.needsUpdate = true;
+	        self.toImagePlane.geometry.needsUpdate = true;
+	      }, 500);
 	    }
 	  }, {
 	    key: 'createImagePlaneMaterial',
