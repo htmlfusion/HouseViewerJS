@@ -93,6 +93,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.imagePlane = null;
 
 	    this.toImagePlane = null;
+	    this.loader = new _threeJs.TextureLoader();
+	    this.loader.setCrossOrigin("anonymous");
 	  }
 
 	  _createClass(_default, [{
@@ -210,7 +212,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: 'goto',
-	    value: function goto(vector) {
+	    value: function goto(vector, shotId) {
 	      var self = this;
 	      var start = this.camera.position.clone();
 	      var distance = start.distanceTo(vector);
@@ -248,6 +250,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        self.imagePlane = self.toImagePlane;
 	        self.imagePlane.material.uniforms.opacity.value = 1;
 	        self.imagePlane.material.needsUpdate = true;
+	        self.loadPanoTiles(shotId, self.imagePlane);
 	      });
 	    }
 	  }, {
@@ -307,19 +310,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	        self.camera.position.x = position.x;
 	        self.camera.position.y = position.y;
 	        self.camera.position.z = position.z;
+	      } else {
+	        self.clearTextureLoad();
+	        self.imagePlane.material.uniforms.projectorTex.value = null;
+	        self.imagePlane.material.needsUpdate = true;
 	      }
 
 	      this.toImagePlane = new _threeJs.Mesh();
 
 	      self.toImagePlane.material = this.createImagePlaneMaterial(cam, shot);
+
 	      self.toImagePlane.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
 
 	      self.toImagePlane.geometry.computeBoundingBox();
 	      var center = self.toImagePlane.geometry.boundingBox.center();
 
-	      this.loadPanoTiles(shotId, self.toImagePlane, function () {
+	      this.loadPanoLow(shotId, self.toImagePlane, function () {
 	        self.scene.add(self.toImagePlane);
-	        self.goto(position);
+	        self.goto(position, shotId);
 	        self.camera.position.x = position.x;
 	        self.camera.position.y = position.y;
 	        self.camera.position.z = position.z;
@@ -509,66 +517,58 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
 	    }
 	  }, {
-	    key: 'clearPano',
-	    value: function clearPano() {
+	    key: 'clearTextureLoad',
+	    value: function clearTextureLoad() {
 	      this.tileTimeouts.forEach(function (id) {
 	        clearTimeout(id);
 	      });
 	      this.tileTimeouts = [];
-	      var texture = new _threeJs.GridTexture(256, 128, 16, 16);
-	      material = new _threeJs.MeshBasicMaterial({ map: texture, transparent: true });
-	      this.roomSphere.material = material;
+	    }
+	  }, {
+	    key: 'loadPanoLow',
+	    value: function loadPanoLow(shotId, imageSphere, successCb) {
+	      this.loader.load(this.imageURL(shotId), function (texture) {
+	        imageSphere.material.uniforms.projectorTexLow.value = texture;
+	        if (successCb) {
+	          successCb();
+	        }
+	      });
 	    }
 	  }, {
 	    key: 'loadPanoTiles',
 	    value: function loadPanoTiles(shotId, imageSphere, successCb) {
 	      var self = this;
 
-	      var loader = new _threeJs.TextureLoader();
+	      var offset = 0;
+	      for (var c = 1; c < 17; c++) {
 
-	      loader.setCrossOrigin("anonymous");
+	        for (var r = 1; r < 17; r++) {
 
-	      //self.clearPano();
+	          var makeTile = function makeTile(c, r) {
 
-	      loader.load(this.imageURL(shotId), function (texture) {
-	        self.toImagePlane.material.uniforms.projectorTexLow.value = texture;
-	        if (successCb) {
-	          successCb();
-	        }
-	      });
+	            return function () {
 
-	      var id = setTimeout(function () {
+	              var tile = self.tileURL(c, r, shotId);
 
-	        var offset = 0;
-	        for (var c = 1; c < 17; c++) {
-
-	          for (var r = 1; r < 17; r++) {
-
-	            var makeTile = function makeTile(c, r) {
-
-	              return function () {
-
-	                var tile = self.tileURL(c, r, shotId);
-
-	                var patchTex = function patchTex(tile, r, c) {
-	                  return function (unitTexture) {
+	              var patchTex = function patchTex(tile, r, c) {
+	                return function (unitTexture) {
+	                  if (imageSphere.material.uniforms.projectorTex.value) {
 	                    imageSphere.material.uniforms.projectorTex.value.patchTexture(unitTexture, (c - 1) * 256, 2048 - (r - 1) * 128 - 128);
 	                    imageSphere.material.needsUpdate = true;
-	                  };
+	                  }
 	                };
-
-	                loader.load(tile, patchTex(tile, r, c));
 	              };
+
+	              self.loader.load(tile, patchTex(tile, r, c));
 	            };
+	          };
 
-	            var id2 = setTimeout(makeTile(c, r), offset * 10);
+	          var id2 = setTimeout(makeTile(c, r), offset * 10);
 
-	            offset += 1;
-	            self.tileTimeouts.push(id2);
-	          }
+	          offset += 1;
+	          self.tileTimeouts.push(id2);
 	        }
-	      }, 500);
-	      self.tileTimeouts.push(id);
+	      }
 	    }
 	  }, {
 	    key: 'loadPano',

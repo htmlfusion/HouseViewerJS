@@ -20,6 +20,9 @@ export default class {
     this.imagePlane = null;
 
     this.toImagePlane = null;
+    this.loader = new TextureLoader();
+    this.loader.setCrossOrigin("anonymous");
+
   }
 
   init(element) {
@@ -137,7 +140,7 @@ export default class {
 
   }
 
-  goto(vector) {
+  goto(vector, shotId) {
     var self = this;
     var start = this.camera.position.clone();
     var distance = start.distanceTo(vector);
@@ -181,6 +184,7 @@ export default class {
       self.imagePlane = self.toImagePlane
       self.imagePlane.material.uniforms.opacity.value = 1;
       self.imagePlane.material.needsUpdate = true;
+      self.loadPanoTiles(shotId, self.imagePlane);
     })
   }
 
@@ -238,19 +242,24 @@ export default class {
       self.camera.position.x = position.x;
       self.camera.position.y = position.y;
       self.camera.position.z = position.z;
+    } else {
+      self.clearTextureLoad();
+      self.imagePlane.material.uniforms.projectorTex.value = null;
+      self.imagePlane.material.needsUpdate = true;
     }
 
     this.toImagePlane = new Mesh();
 
     self.toImagePlane.material = this.createImagePlaneMaterial(cam, shot);
+
     self.toImagePlane.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
 
     self.toImagePlane.geometry.computeBoundingBox();
     var center = self.toImagePlane.geometry.boundingBox.center();
 
-    this.loadPanoTiles(shotId, self.toImagePlane, function() {
+    this.loadPanoLow(shotId, self.toImagePlane, function() {
       self.scene.add(self.toImagePlane);
-      self.goto(position);
+      self.goto(position, shotId);
       self.camera.position.x = position.x;
       self.camera.position.y = position.y;
       self.camera.position.z = position.z;
@@ -455,65 +464,58 @@ export default class {
     return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
   }
 
-  clearPano() {
+  clearTextureLoad() {
     this.tileTimeouts.forEach(function(id) {
       clearTimeout(id);
     });
     this.tileTimeouts = [];
-    var texture = new GridTexture( 256, 128, 16, 16 );
-    material = new MeshBasicMaterial( {map: texture, transparent: true} );
-    this.roomSphere.material = material;
+  }
+
+  loadPanoLow(shotId, imageSphere, successCb) {
+    this.loader.load(this.imageURL(shotId), function(texture) {
+      imageSphere.material.uniforms.projectorTexLow.value = texture;
+      if (successCb) {
+        successCb();
+      }
+    });
   }
 
 
   loadPanoTiles(shotId, imageSphere, successCb) {
     var self = this;
 
-    var loader = new TextureLoader();
 
-    loader.setCrossOrigin("anonymous");
+    var offset = 0;
+    for (var c = 1; c < 17; c++) {
 
-    //self.clearPano();
+      for (var r = 1; r < 17; r++) {
 
-    loader.load(this.imageURL(shotId), function(texture) {
-      self.toImagePlane.material.uniforms.projectorTexLow.value = texture;
-      if (successCb) {
-        successCb();
-      }
-    });
+        var makeTile = function(c, r) {
 
-    var id = setTimeout(function(){
+          return function() {
 
-      var offset = 0;
-      for (var c = 1; c < 17; c++) {
+            var tile = self.tileURL(c, r, shotId);
 
-        for (var r = 1; r < 17; r++) {
-
-          var makeTile = function(c, r) {
-
-            return function() {
-
-              var tile = self.tileURL(c, r, shotId);
-
-              var patchTex = function ( tile, r, c) {
-                return function(unitTexture) {
+            var patchTex = function ( tile, r, c) {
+              return function(unitTexture) {
+                if (imageSphere.material.uniforms.projectorTex.value) {
                   imageSphere.material.uniforms.projectorTex.value.patchTexture(unitTexture, (c-1)*256, (2048-(r-1)*128)-128);
                   imageSphere.material.needsUpdate = true;
                 }
-              };
-
-              loader.load( tile, patchTex(tile, r, c) );
+              }
             };
+
+            self.loader.load( tile, patchTex(tile, r, c) );
           };
+        };
 
-          var id2 = setTimeout(makeTile(c, r), offset * 10);
+        var id2 = setTimeout(makeTile(c, r), offset * 10);
 
-          offset += 1;
-          self.tileTimeouts.push(id2);
-        }
+        offset += 1;
+        self.tileTimeouts.push(id2);
       }
-    }, 500);
-    self.tileTimeouts.push(id);
+    }
+
   }
 
   loadPano(url, successCb, failureCb, progressCb) {
