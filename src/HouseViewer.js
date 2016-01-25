@@ -18,10 +18,8 @@ export default class {
 
 
     this.imagePlane = null;
-    this.imagePlaneLow = null;
 
     this.toImagePlane = null;
-    this.toImagePlaneLow = null;
   }
 
   init(element) {
@@ -243,23 +241,15 @@ export default class {
     }
 
     this.toImagePlane = new Mesh();
-    this.toImagePlaneLow = new Mesh();
 
     self.toImagePlane.material = this.createImagePlaneMaterial(cam, shot);
     self.toImagePlane.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
 
-
-    self.toImagePlaneLow.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
-    self.toImagePlaneLow.material = this.createImagePlaneMaterial(cam, shot);
-
     self.toImagePlane.geometry.computeBoundingBox();
     var center = self.toImagePlane.geometry.boundingBox.center();
-    self.toImagePlaneLow.geometry.translate(-center.x, -center.y, -center.z);
-    self.toImagePlaneLow.geometry.scale(1.1, 1.1, 1.1);
 
     this.loadPanoTiles(shotId, self.toImagePlane, function() {
       self.scene.add(self.toImagePlane);
-      //self.scene.add(self.toImagePlaneLow);
       self.goto(position);
       self.camera.position.x = position.x;
       self.camera.position.y = position.y;
@@ -277,7 +267,6 @@ export default class {
 
     var texture = new GridTexture( 256, 128, 16, 16 );
 
-
     var self = this;
     cam.width = 4096;
     cam.height = 2048;
@@ -293,6 +282,10 @@ export default class {
         projectorTex: {
           type: 't',
           value: texture
+        },
+        projectorTexLow: {
+          type: 't',
+          value: null
         },
         opacity: {
           type: 'f',
@@ -483,7 +476,7 @@ export default class {
     //self.clearPano();
 
     loader.load(this.imageURL(shotId), function(texture) {
-      self.toImagePlaneLow.material.uniforms.projectorTex.value = texture;
+      self.toImagePlane.material.uniforms.projectorTexLow.value = texture;
       if (successCb) {
         successCb();
       }

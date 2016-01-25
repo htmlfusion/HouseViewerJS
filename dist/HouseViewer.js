@@ -91,10 +91,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.hoverShot = null;
 
 	    this.imagePlane = null;
-	    this.imagePlaneLow = null;
 
 	    this.toImagePlane = null;
-	    this.toImagePlaneLow = null;
 	  }
 
 	  _createClass(_default, [{
@@ -312,22 +310,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 
 	      this.toImagePlane = new _threeJs.Mesh();
-	      this.toImagePlaneLow = new _threeJs.Mesh();
 
 	      self.toImagePlane.material = this.createImagePlaneMaterial(cam, shot);
 	      self.toImagePlane.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
 
-	      self.toImagePlaneLow.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
-	      self.toImagePlaneLow.material = this.createImagePlaneMaterial(cam, shot);
-
 	      self.toImagePlane.geometry.computeBoundingBox();
 	      var center = self.toImagePlane.geometry.boundingBox.center();
-	      self.toImagePlaneLow.geometry.translate(-center.x, -center.y, -center.z);
-	      self.toImagePlaneLow.geometry.scale(1.1, 1.1, 1.1);
 
 	      this.loadPanoTiles(shotId, self.toImagePlane, function () {
 	        self.scene.add(self.toImagePlane);
-	        //self.scene.add(self.toImagePlaneLow);
 	        self.goto(position);
 	        self.camera.position.x = position.x;
 	        self.camera.position.y = position.y;
@@ -360,6 +351,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	          projectorTex: {
 	            type: 't',
 	            value: texture
+	          },
+	          projectorTexLow: {
+	            type: 't',
+	            value: null
 	          },
 	          opacity: {
 	            type: 'f',
@@ -536,7 +531,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      //self.clearPano();
 
 	      loader.load(this.imageURL(shotId), function (texture) {
-	        self.toImagePlaneLow.material.uniforms.projectorTex.value = texture;
+	        self.toImagePlane.material.uniforms.projectorTexLow.value = texture;
 	        if (successCb) {
 	          successCb();
 	        }
@@ -44064,7 +44059,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 23 */
 /***/ function(module, exports) {
 
-	var shader = "\n#ifdef GL_ES\nprecision highp float;\n#endif\n\n#define tau 6.28318530718\n\nvarying vec4 vRstq;\nuniform sampler2D projectorTex;\nuniform float opacity;\n\nvoid main()\n{\n  vec3 b = normalize(vRstq.xyz);\n  float lat = -asin(b.y);\n  float lon = atan(b.x, b.z);\n  float x = lon / tau + 0.5;\n  float y = lat / tau * 2.0 + 0.5;\n  vec4 baseColor = texture2D(projectorTex, vec2(x, y));\n  baseColor.a = opacity;\n  gl_FragColor = baseColor;\n}\n";
+	var shader = "\n#ifdef GL_ES\nprecision highp float;\n#endif\n\n#define tau 6.28318530718\n\nvarying vec4 vRstq;\nuniform sampler2D projectorTex;\nuniform sampler2D projectorTexLow;\nuniform float opacity;\n\nvoid main()\n{\n  vec3 b = normalize(vRstq.xyz);\n  float lat = -asin(b.y);\n  float lon = atan(b.x, b.z);\n  float x = lon / tau + 0.5;\n  float y = lat / tau * 2.0 + 0.5;\n  vec4 baseColor = texture2D(projectorTex, vec2(x, y));\n  vec4 baseColorLow = texture2D(projectorTexLow, vec2(x, y));\n  vec4 merged = baseColor.rgba * baseColor.a + baseColorLow.rgba * baseColorLow.a * (1.0 - baseColor.a);  // blending equation\n  merged.a = opacity;\n  gl_FragColor = merged;\n}\n";
 
 	module.exports = shader;
 

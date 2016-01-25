@@ -7,6 +7,7 @@ precision highp float;
 
 varying vec4 vRstq;
 uniform sampler2D projectorTex;
+uniform sampler2D projectorTexLow;
 uniform float opacity;
 
 void main()
@@ -17,8 +18,10 @@ void main()
   float x = lon / tau + 0.5;
   float y = lat / tau * 2.0 + 0.5;
   vec4 baseColor = texture2D(projectorTex, vec2(x, y));
-  baseColor.a = opacity;
-  gl_FragColor = baseColor;
+  vec4 baseColorLow = texture2D(projectorTexLow, vec2(x, y));
+  vec4 merged = baseColor.rgba * baseColor.a + baseColorLow.rgba * baseColorLow.a * (1.0 - baseColor.a);  // blending equation
+  merged.a = opacity;
+  gl_FragColor = merged;
 }
 `;
 
