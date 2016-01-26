@@ -274,6 +274,9 @@ export default class {
         self.camera.position.x = position.x;
         self.camera.position.y = position.y;
         self.camera.position.z = position.z;
+        if (successCb) {
+          successCb();
+        }
       });
 
       //var wireframe = new WireframeHelper( self.imagePlane, 0x00ff00 );
