@@ -256,13 +256,14 @@ export default class {
       self.clearTextureLoad();
       var low = self.imagePlane.material.uniforms.projectorTexLow.value;
       self.imagePlane.material.dispose();
-      self.imagePlane.material = this.createImagePlaneMaterial(prevCam, prevShot);
+      this.createImagePlaneMaterial(prevCam, prevShot, self.toImagePlane);
       self.imagePlane.material.uniforms.projectorTexLow.value = low;
     }
 
     this.toImagePlane = new Mesh();
+    this.toImagePlane.material = null;
 
-    self.toImagePlane.material = this.createImagePlaneMaterial(cam, shot);
+    this.createImagePlaneMaterial(cam, shot, self.toImagePlane);
 
     self.toImagePlane.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
 
@@ -288,59 +289,64 @@ export default class {
   }
 
 
-  createImagePlaneMaterial(cam, shot) {
-
-    var texture = new GridTexture( 256, 128, 16, 16 );
+  createImagePlaneMaterial(cam, shot, imagePlane) {
 
     var self = this;
     cam.width = 4096;
     cam.height = 2048;
-    var material = new ShaderMaterial({
-      side: DoubleSide,
-      transparent: true,
-      depthWrite: false,
-      uniforms: {
-        projectorMat: {
-          type: 'm4',
-          value: self.projectorCameraMatrix(cam, shot)
-        },
-        projectorTex: {
-          type: 't',
-          value: texture
-        },
-        projectorTexLow: {
-          type: 't',
-          value: null
-        },
-        opacity: {
-          type: 'f',
-          value: 1
-        },
-        focal: {
-          type: 'f',
-          value: cam.focal
-        },
-        k1: {
-          type: 'f',
-          value: cam.k1
-        },
-        k2: {
-          type: 'f',
-          value: cam.k2
-        },
-        scale_x: {
-          type: 'f',
-          value: Math.max(cam.width, cam.height) / cam.width
-        },
-        scale_y: {
-          type: 'f',
-          value: Math.max(cam.width, cam.height) / cam.height
-        }
-      },
-      vertexShader: self.imageVertexShader(),
-      fragmentShader: self.imageFragmentShader()
-    });
 
+    var material = imagePlane.material || new ShaderMaterial({
+        side: DoubleSide,
+        transparent: true,
+        depthWrite: false,
+        uniforms: {
+          projectorMat: {
+            type: 'm4',
+            value: null
+          },
+          projectorTexLow: {
+            type: 't',
+            value: null
+          },
+          projectorTex: {
+            type: 't',
+            value: null
+          },
+          opacity: {
+            type: 'f',
+            value: 1
+          },
+          focal: {
+            type: 'f',
+            value: cam.focal
+          },
+          k1: {
+            type: 'f',
+            value: cam.k1
+          },
+          k2: {
+            type: 'f',
+            value: cam.k2
+          },
+          scale_x: {
+            type: 'f',
+            value: Math.max(cam.width, cam.height) / cam.width
+          },
+          scale_y: {
+            type: 'f',
+            value: Math.max(cam.width, cam.height) / cam.height
+          }
+        },
+        vertexShader: self.imageVertexShader(),
+        fragmentShader: self.imageFragmentShader()
+      });
+
+    material.uniforms.projectorMat.value = self.projectorCameraMatrix(cam, shot);
+
+    if (!material.uniforms.projectorTex.value) {
+      material.uniforms.projectorTex.value = new GridTexture( 256, 128, 16, 16 );
+    }
+    imagePlane.material = material;
     return material;
 
   }
@@ -547,8 +553,6 @@ export default class {
       // Function when resource is loaded
       function ( texture ) {
         // do something with the texture
-        var material = new MeshBasicMaterial( {map: texture} );
-        self.roomSphere.material = material;
         if (successCb) {
           successCb(texture);
         }

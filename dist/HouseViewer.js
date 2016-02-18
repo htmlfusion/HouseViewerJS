@@ -324,13 +324,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        self.clearTextureLoad();
 	        var low = self.imagePlane.material.uniforms.projectorTexLow.value;
 	        self.imagePlane.material.dispose();
-	        self.imagePlane.material = this.createImagePlaneMaterial(prevCam, prevShot);
+	        this.createImagePlaneMaterial(prevCam, prevShot, self.toImagePlane);
 	        self.imagePlane.material.uniforms.projectorTexLow.value = low;
 	      }
 
 	      this.toImagePlane = new _threeJs.Mesh();
+	      this.toImagePlane.material = null;
 
-	      self.toImagePlane.material = this.createImagePlaneMaterial(cam, shot);
+	      this.createImagePlaneMaterial(cam, shot, self.toImagePlane);
 
 	      self.toImagePlane.geometry = self.imagePlaneGeo(self.camera.reconstruction, self.camera.shot_id);
 
@@ -355,27 +356,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: 'createImagePlaneMaterial',
-	    value: function createImagePlaneMaterial(cam, shot) {
-
-	      var texture = new _threeJs.GridTexture(256, 128, 16, 16);
+	    value: function createImagePlaneMaterial(cam, shot, imagePlane) {
 
 	      var self = this;
 	      cam.width = 4096;
 	      cam.height = 2048;
-	      var material = new _threeJs.ShaderMaterial({
+
+	      var material = imagePlane.material || new _threeJs.ShaderMaterial({
 	        side: _threeJs.DoubleSide,
 	        transparent: true,
 	        depthWrite: false,
 	        uniforms: {
 	          projectorMat: {
 	            type: 'm4',
-	            value: self.projectorCameraMatrix(cam, shot)
-	          },
-	          projectorTex: {
-	            type: 't',
-	            value: texture
+	            value: null
 	          },
 	          projectorTexLow: {
+	            type: 't',
+	            value: null
+	          },
+	          projectorTex: {
 	            type: 't',
 	            value: null
 	          },
@@ -408,6 +408,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        fragmentShader: self.imageFragmentShader()
 	      });
 
+	      material.uniforms.projectorMat.value = self.projectorCameraMatrix(cam, shot);
+
+	      if (!material.uniforms.projectorTex.value) {
+	        material.uniforms.projectorTex.value = new _threeJs.GridTexture(256, 128, 16, 16);
+	      }
+	      imagePlane.material = material;
 	      return material;
 	    }
 	  }, {
@@ -600,8 +606,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	      // Function when resource is loaded
 	      function (texture) {
 	        // do something with the texture
-	        var material = new _threeJs.MeshBasicMaterial({ map: texture });
-	        self.roomSphere.material = material;
 	        if (successCb) {
 	          successCb(texture);
 	        }
