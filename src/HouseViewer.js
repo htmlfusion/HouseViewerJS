@@ -98,7 +98,7 @@ export default class {
         self.manager.render(self.scene, self.camera, timestamp);
 
         requestAnimationFrame(animate);
-      }, 1000/60);
+      }, 1000/30);
     }
 
     //window.addEventListener("devicemotion", function(){
