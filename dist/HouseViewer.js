@@ -91,8 +91,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.hoverShot = null;
 
 	    this.imagePlane = null;
-
 	    this.toImagePlane = null;
+	    this.swapPlane = null;
+
 	    this.loader = new _threeJs.TextureLoader();
 	    this.loader.setCrossOrigin("anonymous");
 	  }
@@ -170,7 +171,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          self.manager.render(self.scene, self.camera, timestamp);
 
 	          requestAnimationFrame(animate);
-	        }, 1000 / 60);
+	        }, 1000 / 30);
 	      }
 
 	      //window.addEventListener("devicemotion", function(){
@@ -242,9 +243,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      crossFade.onComplete(function () {
 	        if (self.imagePlane) {
-	          self.imagePlane.material.dispose();
-	          self.imagePlane.geometry.dispose();
 	          self.scene.remove(self.imagePlane);
+	          self.swapPlane = self.imagePlane;
+	          self.swapPlane.material.uniforms.projectorTex.value.patchSet = [];
+	          self.swapPlane.material.uniforms.projectorTex.value.needsUpdate = true;
 	        }
 
 	        self.imagePlane = self.toImagePlane;
@@ -321,15 +323,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	        self.camera.position.y = position.y;
 	        self.camera.position.z = position.z;
 	      } else {
-	        self.clearTextureLoad();
+	        //self.clearTextureLoad();
 	        var low = self.imagePlane.material.uniforms.projectorTexLow.value;
-	        self.imagePlane.material.dispose();
 	        this.createImagePlaneMaterial(prevCam, prevShot, self.toImagePlane);
 	        self.imagePlane.material.uniforms.projectorTexLow.value = low;
 	      }
 
-	      this.toImagePlane = new _threeJs.Mesh();
-	      this.toImagePlane.material = null;
+	      if (this.swapPlane) {
+	        this.toImagePlane = this.swapPlane;
+	      } else {
+	        this.toImagePlane = new _threeJs.Mesh();
+	        this.toImagePlane.material = null;
+	      }
 
 	      this.createImagePlaneMaterial(cam, shot, self.toImagePlane);
 

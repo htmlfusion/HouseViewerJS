@@ -18,8 +18,9 @@ export default class {
 
 
     this.imagePlane = null;
-
     this.toImagePlane = null;
+    this.swapPlane = null;
+
     this.loader = new TextureLoader();
     this.loader.setCrossOrigin("anonymous");
 
@@ -167,8 +168,8 @@ export default class {
           self.imagePlane.material.uniforms.opacity.value = this.opacity;
           self.imagePlane.material.needsUpdate = true;
 
-          self.toImagePlane.material.opacity = opacityIn
-          self.toImagePlane.material.uniforms.opacity.value = opacityIn
+          self.toImagePlane.material.opacity = opacityIn;
+          self.toImagePlane.material.uniforms.opacity.value = opacityIn;
           self.toImagePlane.material.needsUpdate = true;
         }
       })
@@ -176,12 +177,13 @@ export default class {
 
     crossFade.onComplete(function() {
       if (self.imagePlane) {
-        self.imagePlane.material.dispose();
-        self.imagePlane.geometry.dispose();
         self.scene.remove(self.imagePlane);
+        self.swapPlane = self.imagePlane;
+        self.swapPlane.material.uniforms.projectorTex.value.patchSet = [];
+        self.swapPlane.material.uniforms.projectorTex.value.needsUpdate = true;
       }
 
-      self.imagePlane = self.toImagePlane
+      self.imagePlane = self.toImagePlane;
       self.imagePlane.material.uniforms.opacity.value = 1;
       self.imagePlane.material.needsUpdate = true;
       self.loadPanoTiles(shotId, self.imagePlane);
@@ -253,15 +255,18 @@ export default class {
       self.camera.position.y = position.y;
       self.camera.position.z = position.z;
     } else {
-      self.clearTextureLoad();
+      //self.clearTextureLoad();
       var low = self.imagePlane.material.uniforms.projectorTexLow.value;
-      self.imagePlane.material.dispose();
       this.createImagePlaneMaterial(prevCam, prevShot, self.toImagePlane);
       self.imagePlane.material.uniforms.projectorTexLow.value = low;
     }
 
-    this.toImagePlane = new Mesh();
-    this.toImagePlane.material = null;
+    if (this.swapPlane) {
+      this.toImagePlane = this.swapPlane;
+    } else {
+      this.toImagePlane = new Mesh();
+      this.toImagePlane.material = null;
+    }
 
     this.createImagePlaneMaterial(cam, shot, self.toImagePlane);
 
