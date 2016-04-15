@@ -87,6 +87,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.rooms = {};
 	    this.activeDoor = null;
 	    this.tileTimeouts = [];
+	    this.textures = [];
 	  }
 
 	  _createClass(_default, [{
@@ -291,7 +292,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.tileTimeouts = [];
 	      var texture = new _threeJs.GridTexture(256, 128, 16, 16);
 	      material = new _threeJs.MeshBasicMaterial({ map: texture, transparent: true });
+	      if (this.roomSphere.material) {
+	        this.roomSphere.material.dispose();
+	      }
 	      this.roomSphere.material = material;
+	      while (this.textures.length) {
+	        this.textures.pop().dispose();
+	      }
 	    }
 	  }, {
 	    key: 'loadPanoTiles',
@@ -305,7 +312,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	      self.clearPano();
 
 	      loader.load(this.lowResUrl.replace('{house}', self.house.id).replace('{room}', room.id), function (texture) {
+	        self.textures.push(texture);
 	        var material = new _threeJs.MeshBasicMaterial({ map: texture });
+	        if (self.roomSphereLow.material) self.roomSphereLow.material.dispose();
 	        self.roomSphereLow.material = material;
 	        if (successCb) {
 	          successCb();
@@ -327,7 +336,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	                var patchTex = function patchTex(tile, r, c) {
 	                  return function (unitTexture) {
-	                    console.log(tile);
+	                    self.textures.push(unitTexture);
 	                    self.roomSphere.material.map.patchTexture(unitTexture, (c - 1) * 256, 2048 - (r - 1) * 128 - 128);
 	                  };
 	                };
@@ -361,6 +370,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      function (texture) {
 	        // do something with the texture
 	        var material = new _threeJs.MeshBasicMaterial({ map: texture });
+	        if (self.roomSphere.material) self.roomSphere.material.dispose();
 	        self.roomSphere.material = material;
 	        if (successCb) {
 	          successCb(texture);
@@ -39859,7 +39869,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  if (Util.isTimestampDeltaValid(deltaT)) {
 	    this.run_();
 	  }
-	  
+
 	  this.previousGyroMeasurement.copy(this.currentGyroMeasurement);
 	};
 

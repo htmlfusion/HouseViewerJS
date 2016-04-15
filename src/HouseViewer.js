@@ -15,6 +15,7 @@ export default class {
     this.rooms = {};
     this.activeDoor = null;
     this.tileTimeouts = [];
+    this.textures = [];
   }
 
   init(element) {
@@ -60,9 +61,11 @@ export default class {
     material = new MeshBasicMaterial( {map: texture, transparent: true} );
 
     this.roomSphere = new Mesh( geometry, material );
+    this.textures.push(texture);
 
 
     var lowResTexture = new MeshBasicMaterial();
+    this.textures.push(lowResTexture);
 
     var geometry = new SphereGeometry( radius+200, 60, 40 );
     geometry.scale( - 1, 1, 1 );
@@ -159,7 +162,7 @@ export default class {
     // Once the high resolution is loaded, we'll complete the room setup
     var onRoomLoad = function(){
 
-      basicInit()
+      basicInit();
 
       var doors = new Object3D();
 
@@ -215,7 +218,13 @@ export default class {
     this.tileTimeouts = [];
     var texture = new GridTexture( 256, 128, 16, 16 );
     material = new MeshBasicMaterial( {map: texture, transparent: true} );
+    if (this.roomSphere.material) {
+      this.roomSphere.material.dispose();
+    }
     this.roomSphere.material = material;
+    while (this.textures.length) {
+      this.textures.pop().dispose();
+    }
   }
 
 
@@ -228,8 +237,12 @@ export default class {
 
     self.clearPano();
 
+    self.roomSphereLow.dispose();
+
     loader.load(this.lowResUrl.replace('{house}', self.house.id).replace('{room}', room.id), function(texture) {
+      self.textures.push(texture);
       var material = new MeshBasicMaterial( {map: texture} );
+      if (self.roomSphereLow.material) self.roomSphereLow.material.dispose();
       self.roomSphereLow.material = material;
       if (successCb) {
         successCb();
@@ -255,7 +268,7 @@ export default class {
 
               var patchTex = function ( tile, r, c) {
                 return function(unitTexture) {
-                  console.log(tile);
+                  self.textures.push(unitTexture);
                   self.roomSphere.material.map.patchTexture(unitTexture, (c-1)*256, (2048-(r-1)*128)-128);
                 }
               };
@@ -288,6 +301,7 @@ export default class {
       function ( texture ) {
         // do something with the texture
         var material = new MeshBasicMaterial( {map: texture} );
+        if (self.roomSphere.material) self.roomSphere.material.dispose();
         self.roomSphere.material = material;
         if (successCb) {
           successCb(texture);
