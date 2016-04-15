@@ -150,8 +150,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }, true);
 	    }
 	  }, {
-	    key: 'stop',
-	    value: function stop() {
+	    key: 'destroy',
+	    value: function destroy() {
 	      this.canceled = true;
 	      this.swapRoomMesh('room');
 	    }
