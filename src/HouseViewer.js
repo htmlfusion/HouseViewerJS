@@ -104,6 +104,8 @@ export default class {
     var doors = this.scene.getObjectByName('doors');
     if (doors) {
 
+      this.activeDoor = null;
+
       this.raycaster.setFromCamera( this.screenCenter, this.camera );
 
       // See if the ray from the camera into the world hits one of our meshes

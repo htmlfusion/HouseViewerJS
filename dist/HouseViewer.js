@@ -183,6 +183,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var doors = this.scene.getObjectByName('doors');
 	      if (doors) {
 
+	        self.activeDoor = null;
+
 	        this.raycaster.setFromCamera(this.screenCenter, this.camera);
 
 	        // See if the ray from the camera into the world hits one of our meshes
