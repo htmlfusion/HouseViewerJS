@@ -8,7 +8,7 @@ var xmlhttp = new XMLHttpRequest();
 xmlhttp.onreadystatechange = function() {
   if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
     var house = JSON.parse(xmlhttp.responseText);
-    houseViewer.setHouse(house);
+    houseViewer.loadHouse(house);
     houseViewer.loadRoom(1);
   }
 };
