@@ -52,8 +52,11 @@ export default class {
 
     this.activeDoor = null;
     this.raycaster = new Raycaster();
+    this.canceled = false;
 
     function animate(timestamp) {
+      if (self.canceled) return;
+
       setTimeout(function () {
         // Update VR headset position and apply to camera.
         controls.update();
@@ -64,12 +67,18 @@ export default class {
       }, 1000 / 60);
     }
 
+    // Kick off animation loop
+    animate();
+
     window.addEventListener("devicemotion", function () {
       //self.updateRaycaster();
     }, true);
 
-    // Kick off animation loop
-    animate();
+  }
+
+  destroy() {
+    this.canceled = true;
+    this.swapRoomMesh('room');
   }
 
   createRoomMesh() {
@@ -84,7 +93,7 @@ export default class {
 
   swapRoomMesh(name, newMesh) {
     var mesh = this.scene.getObjectByName(name);
-    this.scene.add(newMesh);
+    if (newMesh) this.scene.add(newMesh);
     if (mesh) {
       this.scene.remove(mesh);
       mesh.material.map.dispose();
@@ -137,6 +146,7 @@ export default class {
 
   loadHouse(house) {
     var self = this;
+    this.canceled = false;
     this.rooms = {};
     this.house = house.data.house;
     this.house.rooms.forEach(function (room) {

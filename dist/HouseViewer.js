@@ -127,8 +127,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      this.activeDoor = null;
 	      this.raycaster = new _threeJs.Raycaster();
+	      this.canceled = false;
 
 	      function animate(timestamp) {
+	        if (self.canceled) return;
+
 	        setTimeout(function () {
 	          // Update VR headset position and apply to camera.
 	          controls.update();
@@ -139,12 +142,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }, 1000 / 60);
 	      }
 
+	      // Kick off animation loop
+	      animate();
+
 	      window.addEventListener("devicemotion", function () {
 	        //self.updateRaycaster();
 	      }, true);
-
-	      // Kick off animation loop
-	      animate();
+	    }
+	  }, {
+	    key: 'stop',
+	    value: function stop() {
+	      this.canceled = true;
+	      this.swapRoomMesh('room');
 	    }
 	  }, {
 	    key: 'createRoomMesh',
@@ -161,7 +170,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'swapRoomMesh',
 	    value: function swapRoomMesh(name, newMesh) {
 	      var mesh = this.scene.getObjectByName(name);
-	      this.scene.add(newMesh);
+	      if (newMesh) this.scene.add(newMesh);
 	      if (mesh) {
 	        this.scene.remove(mesh);
 	        mesh.material.map.dispose();
@@ -183,7 +192,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var doors = this.scene.getObjectByName('doors');
 	      if (doors) {
 
-	        self.activeDoor = null;
+	        this.activeDoor = null;
 
 	        this.raycaster.setFromCamera(this.screenCenter, this.camera);
 
@@ -217,6 +226,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'loadHouse',
 	    value: function loadHouse(house) {
 	      var self = this;
+	      this.canceled = false;
 	      this.rooms = {};
 	      this.house = house.data.house;
 	      this.house.rooms.forEach(function (room) {
