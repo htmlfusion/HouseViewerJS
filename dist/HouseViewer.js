@@ -125,6 +125,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      this.manager = new _WebVRManager2['default'](renderer, effect, params);
 
+	      this.activeDoor = null;
 	      this.raycaster = new _threeJs.Raycaster();
 
 	      function animate(timestamp) {
@@ -133,12 +134,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	          controls.update();
 	          // Render the scene through the manager.
 	          self.manager.render(self.scene, self.camera, timestamp);
+	          self.updateRaycaster();
 	          requestAnimationFrame(animate);
 	        }, 1000 / 60);
 	      }
 
 	      window.addEventListener("devicemotion", function () {
-	        self.updateRaycaster();
+	        //self.updateRaycaster();
 	      }, true);
 
 	      // Kick off animation loop
@@ -161,11 +163,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function destroyRoomMesh(name) {
 	      var mesh = this.scene.getObjectByName(name);
 	      if (mesh) {
-	        mesh.material.texture.dispose();
+	        mesh.material.map.dispose();
 	        mesh.material.dispose();
 	        mesh.geometry.dispose();
 	        this.scene.remove(mesh);
-	        mesh.dispose();
 	        return true;
 	      }
 	      return false;
@@ -179,35 +180,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'updateRaycaster',
 	    value: function updateRaycaster() {
 	      var self = this;
-	      //if (this.currentDoors) {
-	      //
-	      //  this.raycaster.setFromCamera( this.screenCenter, this.camera );
-	      //
-	      //  // See if the ray from the camera into the world hits one of our meshes
-	      //  var intersects = this.raycaster.intersectObjects( this.currentDoors.children, true);
-	      //
-	      //  this.currentDoors.children.forEach(function (door) {
-	      //    door.material.opacity = .5;
-	      //    door.needsUpdate = true;
-	      //  });
-	      //
-	      //  // Toggle rotation bool for meshes that we clicked
-	      //  if ( intersects.length > 0 ) {
-	      //    intersects.forEach(function(collision){
-	      //      var door;
-	      //      if (collision.object.name === 'doorKnob') {
-	      //        door = collision.object.parent;
-	      //      } else {
-	      //        door = collision.object;
-	      //      }
-	      //
-	      //      self.activeDoor = door;
-	      //
-	      //      door.material.opacity = 1;
-	      //      door.needsUpdate = true;
-	      //    });
-	      //  }
-	      //}
+	      var doors = this.scene.getObjectByName('doors');
+	      if (doors) {
+
+	        this.raycaster.setFromCamera(this.screenCenter, this.camera);
+
+	        // See if the ray from the camera into the world hits one of our meshes
+	        var intersects = this.raycaster.intersectObjects(doors.children, true);
+
+	        doors.children.forEach(function (door) {
+	          door.material.opacity = .5;
+	          door.needsUpdate = true;
+	        });
+
+	        // Toggle rotation bool for meshes that we clicked
+	        if (intersects.length > 0) {
+	          intersects.forEach(function (collision) {
+	            var door;
+	            if (collision.object.name === 'doorKnob') {
+	              door = collision.object.parent;
+	            } else {
+	              door = collision.object;
+	            }
+
+	            self.activeDoor = door;
+
+	            door.material.opacity = 1;
+	            door.needsUpdate = true;
+	          });
+	        }
+	      }
 	    }
 	  }, {
 	    key: 'loadHouse',
@@ -229,16 +231,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.destroyRoomMesh('room');
 	      var roomMesh = this.createRoomMesh();
 
-	      if (self.currentDoors) {
-	        this.scene.remove(self.currentDoors);
-	      }
-
 	      // Once the high resolution is loaded, we'll complete the room setup
 	      var onRoomLoad = function onRoomLoad() {
 
 	        roomMesh.rotation.y = heading;
 
 	        var doors = new _threeJs.Object3D();
+	        doors.name = 'doors';
 	        room.passages.forEach(function (passage) {
 
 	          var geometry = new _threeJs.SphereGeometry(1, 32, 32);
@@ -263,13 +262,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	          doors.add(door);
 	        });
 
-	        doors.rotation.y = heading;
-	        //doors.scale.set(2, 2, 2);
-	        self.scene.add(doors);
+	        roomMesh.add(doors);
 
-	        if (successCb) {
-	          successCb();
-	        }
+	        if (successCb) successCb();
 	      };
 
 	      onRoomLoad();
