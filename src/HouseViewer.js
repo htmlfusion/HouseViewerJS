@@ -155,8 +155,9 @@ export default class {
     // Once the high resolution is loaded, we'll complete the room setup
     var onRoomLoad = function () {
 
-      var doors = new Object3D();
+      roomMesh.rotation.y = heading;
 
+      var doors = new Object3D();
       room.passages.forEach(function (passage) {
 
         var geometry = new SphereGeometry(1, 32, 32);
@@ -183,15 +184,14 @@ export default class {
 
 
       doors.rotation.y = heading;
-      doors.scale.set(2, 2, 2);
       self.scene.add(doors);
 
-      if (successCb) {
-        successCb();
-      }
+      if (successCb) successCb();
     };
 
-    self.loadPano(room, roomMesh, onRoomLoad, null);
+    onRoomLoad();
+
+    self.loadPano(room, roomMesh, null, null);
   }
 
   pad(n, width, z) {

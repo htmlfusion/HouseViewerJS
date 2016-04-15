@@ -236,8 +236,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	      // Once the high resolution is loaded, we'll complete the room setup
 	      var onRoomLoad = function onRoomLoad() {
 
-	        var doors = new _threeJs.Object3D();
+	        roomMesh.rotation.y = heading;
 
+	        var doors = new _threeJs.Object3D();
 	        room.passages.forEach(function (passage) {
 
 	          var geometry = new _threeJs.SphereGeometry(1, 32, 32);
@@ -259,12 +260,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	          var doorKnob = new _threeJs.Mesh(geometry, material);
 	          doorKnob.name = "doorKnob";
 	          door.add(doorKnob);
-
 	          doors.add(door);
 	        });
 
 	        doors.rotation.y = heading;
-	        doors.scale.set(2, 2, 2);
+	        //doors.scale.set(2, 2, 2);
 	        self.scene.add(doors);
 
 	        if (successCb) {
@@ -272,7 +272,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	      };
 
-	      self.loadPano(room, roomMesh, onRoomLoad, null);
+	      onRoomLoad();
+
+	      self.loadPano(room, roomMesh, null, null);
 	    }
 	  }, {
 	    key: 'pad',
