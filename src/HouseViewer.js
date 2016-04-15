@@ -79,17 +79,17 @@ export default class {
     var material = new MeshBasicMaterial();
     var mesh = new Mesh(roomGeometry, material);
     mesh.name = 'room';
-    this.scene.add(mesh);
     return mesh;
   }
 
-  destroyRoomMesh(name) {
+  swapRoomMesh(name, newMesh) {
     var mesh = this.scene.getObjectByName(name);
+    this.scene.add(newMesh);
     if (mesh) {
+      this.scene.remove(mesh);
       mesh.material.map.dispose();
       mesh.material.dispose();
       mesh.geometry.dispose();
-      this.scene.remove(mesh);
       return true;
     }
     return false;
@@ -147,7 +147,6 @@ export default class {
     var room = this.rooms[roomId];
     var heading = Math.degToRad(360) - Math.degToRad(room.heading);
 
-    this.destroyRoomMesh('room');
     var roomMesh = this.createRoomMesh();
 
     // Once the high resolution is loaded, we'll complete the room setup
@@ -182,13 +181,11 @@ export default class {
       });
 
       roomMesh.add(doors);
-
+      self.swapRoomMesh('room', roomMesh);
       if (successCb) successCb();
     };
 
-    onRoomLoad();
-
-    self.loadPano(room, roomMesh, null, null);
+    self.loadPano(room, roomMesh, onRoomLoad, null);
   }
 
   pad(n, width, z) {

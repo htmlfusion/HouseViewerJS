@@ -155,18 +155,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var material = new _threeJs.MeshBasicMaterial();
 	      var mesh = new _threeJs.Mesh(roomGeometry, material);
 	      mesh.name = 'room';
-	      this.scene.add(mesh);
 	      return mesh;
 	    }
 	  }, {
-	    key: 'destroyRoomMesh',
-	    value: function destroyRoomMesh(name) {
+	    key: 'swapRoomMesh',
+	    value: function swapRoomMesh(name, newMesh) {
 	      var mesh = this.scene.getObjectByName(name);
+	      this.scene.add(newMesh);
 	      if (mesh) {
+	        this.scene.remove(mesh);
 	        mesh.material.map.dispose();
 	        mesh.material.dispose();
 	        mesh.geometry.dispose();
-	        this.scene.remove(mesh);
 	        return true;
 	      }
 	      return false;
@@ -228,7 +228,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var room = this.rooms[roomId];
 	      var heading = _threeJs.Math.degToRad(360) - _threeJs.Math.degToRad(room.heading);
 
-	      this.destroyRoomMesh('room');
 	      var roomMesh = this.createRoomMesh();
 
 	      // Once the high resolution is loaded, we'll complete the room setup
@@ -263,13 +262,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 
 	        roomMesh.add(doors);
-
+	        self.swapRoomMesh('room', roomMesh);
 	        if (successCb) successCb();
 	      };
 
-	      onRoomLoad();
-
-	      self.loadPano(room, roomMesh, null, null);
+	      self.loadPano(room, roomMesh, onRoomLoad, null);
 	    }
 	  }, {
 	    key: 'pad',
