@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "promise-polyfill": "^2.1.4",
-    "three.js": "github:htmlfusion/three.js#texture-patch",
-    "webvr-polyfill": "git+https://github.com/borismus/webvr-polyfill.git"
+    "three.js": "github:htmlfusion/three.js#feature-patch-master",
+    "webvr-polyfill": "github:borismus/webvr-polyfill#0.2.4"
   }
 }
