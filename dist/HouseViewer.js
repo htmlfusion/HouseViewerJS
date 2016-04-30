@@ -108,7 +108,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.camera = new _threeJs.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 10, 6000);
 
 	      // Apply VR headset positional data to camera.
-	      var controls = new _VRControls2['default'](this.camera);
+	      this.controls = new _VRControls2['default'](this.camera);
 
 	      // Apply VR stereo rendering to renderer.
 	      var effect = new _VREffect2['default'](renderer);
@@ -129,8 +129,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.raycaster = new _threeJs.Raycaster();
 	      this.canceled = false;
 
-	      this.play();
-
 	      window.addEventListener("devicemotion", function () {
 	        self.updateRaycaster();
 	      }, true);
@@ -138,13 +136,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'play',
 	    value: function play() {
+	      var self = this;
 	      this.canceled = false;
 	      function animate(timestamp) {
 	        if (self.canceled) return;
 
 	        setTimeout(function () {
 	          // Update VR headset position and apply to camera.
-	          controls.update();
+	          this.controls.update();
 	          // Render the scene through the manager.
 	          self.manager.render(self.scene, self.camera, timestamp);
 	          requestAnimationFrame(animate);
