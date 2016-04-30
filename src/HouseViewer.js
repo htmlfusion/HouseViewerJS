@@ -33,7 +33,7 @@ export default class {
     this.camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 10, 6000);
 
     // Apply VR headset positional data to camera.
-    var controls = new VRControls(this.camera);
+    this.controls = new VRControls(this.camera);
 
     // Apply VR stereo rendering to renderer.
     var effect = new VREffect(renderer);
@@ -54,8 +54,6 @@ export default class {
     this.raycaster = new Raycaster();
     this.canceled = false;
 
-    this.play();
-
     window.addEventListener("devicemotion", function () {
       self.updateRaycaster();
     }, true);
@@ -63,13 +61,14 @@ export default class {
   }
 
   play() {
+    var self = this;
     this.canceled = false;
     function animate(timestamp) {
       if (self.canceled) return;
 
       setTimeout(function () {
         // Update VR headset position and apply to camera.
-        controls.update();
+        this.controls.update();
         // Render the scene through the manager.
         self.manager.render(self.scene, self.camera, timestamp);
         requestAnimationFrame(animate);
