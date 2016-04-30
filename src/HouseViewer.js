@@ -54,6 +54,16 @@ export default class {
     this.raycaster = new Raycaster();
     this.canceled = false;
 
+    this.play();
+
+    window.addEventListener("devicemotion", function () {
+      self.updateRaycaster();
+    }, true);
+
+  }
+
+  play() {
+    this.canceled = false;
     function animate(timestamp) {
       if (self.canceled) return;
 
@@ -62,18 +72,12 @@ export default class {
         controls.update();
         // Render the scene through the manager.
         self.manager.render(self.scene, self.camera, timestamp);
-        self.updateRaycaster();
         requestAnimationFrame(animate);
       }, 1000 / 60);
     }
 
     // Kick off animation loop
     animate();
-
-    window.addEventListener("devicemotion", function () {
-      //self.updateRaycaster();
-    }, true);
-
   }
 
   destroy() {
