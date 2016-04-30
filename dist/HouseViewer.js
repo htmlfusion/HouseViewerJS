@@ -143,7 +143,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        setTimeout(function () {
 	          // Update VR headset position and apply to camera.
-	          this.controls.update();
+	          self.controls.update();
 	          // Render the scene through the manager.
 	          self.manager.render(self.scene, self.camera, timestamp);
 	          requestAnimationFrame(animate);
